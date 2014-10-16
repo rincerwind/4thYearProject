@@ -13,15 +13,11 @@ public class NeuralNetwork : MonoBehaviour
 	public int numHiddenLayers;
 	private LA.Matrix<float> inputs;
 	private LA.Matrix<float> ihWeights;
-	private LA.Matrix<float> ihSums;
 	private LA.Matrix<float> ihBiases;
 	private LA.Matrix<float> ihOutputs;
 	private LA.Matrix<float> hoWeights;
-	private LA.Matrix<float> hoSums;
 	private LA.Matrix<float> hoBiases;
 	private LA.Matrix<float> outputs;
-	private LA.Matrix<float> oGrads;
-	private LA.Matrix<float> hGrads;
 
 	private float[,] ih_weights = { {0.1f,0.2f,0.3f,0.4f}, 
 						   			{0.5f,0.6f,0.7f,0.8f}, 
@@ -40,8 +36,6 @@ public class NeuralNetwork : MonoBehaviour
 		hoWeights = LA.Matrix<float>.Build.DenseOfArray (ho_weights);//.Random (numHidden, numOutputs);
 		ihBiases = LA.Matrix<float>.Build.Dense (1, 4, ih_biases);//.Build.Random (1, numHidden);
 		hoBiases = LA.Matrix<float>.Build.Dense (1, 2, ho_biases);//.Build.Random (1, numOutputs);
-		oGrads = LA.Matrix<float>.Build.Dense (1, numOutputs, 0);
-		hGrads = LA.Matrix<float>.Build.Dense (1, numHidden, 0);
 	}
 
 	// ------------------------------------ Methods ------------------------------------
@@ -54,7 +48,6 @@ public class NeuralNetwork : MonoBehaviour
 			else
 					return 1 / (1 + Mathf.Exp(-x));
 	}
-
 	public float hyperTan (float x)
 	{
 			if (x < -10.0f) 
@@ -66,25 +59,31 @@ public class NeuralNetwork : MonoBehaviour
 	}
 
 	// Feed-Forward Part
-	public void ComputeOutputs(LA.Matrix<float> newInputs){
+	public LA.Matrix<float> ComputeOutputs(LA.Matrix<float> newInputs){
+		LA.Matrix<float> ihSums;
+		LA.Matrix<float> hoSums;
+
 		inputs = newInputs;
 		ihSums = newInputs.Multiply (ihWeights);
 		ihOutputs = ihSums.Add (ihBiases);
 
-		for (int i = 1; i <= numHidden; i++)
-			ihOutputs [1, i] = sigmoid(ihOutputs [1, i]);
+		for (int i = 0; i < numHidden; i++)
+			ihOutputs [0, i] = sigmoid(ihOutputs [0, i]);
 
 		hoSums = ihOutputs.Multiply(hoWeights);
 		outputs = hoSums.Add (hoBiases);
 
-		for (int i = 1; i <= numOutputs; i++)
-			outputs [1, i] = hyperTan(outputs [1, i]);
+		for (int i = 0; i < numOutputs; i++)
+			outputs [0, i] = hyperTan(outputs [0, i]);
 
-		Debug.Log (outputs);
+		return outputs;
 	}
 
 	// Back-Propagation Part
 	public void UpdateWeights(LA.Matrix<float> targetOutputs, float eta, float alpha){
+		LA.Matrix<float> oGrads;
+		LA.Matrix<float> hGrads;
+
 		// Compute output gradient
 		LA.Matrix<float> hyperTanDerivative = (outputs.Negate()).Add(1);
 		hyperTanDerivative = hyperTanDerivative.PointwiseMultiply (outputs.Add (1));
@@ -93,16 +92,16 @@ public class NeuralNetwork : MonoBehaviour
 		// Compute hidden gradient
 		LA.Matrix<float> grads_weights_sums = hoWeights.TransposeAndMultiply (oGrads);
 		LA.Matrix<float> sigmoidDerivative = (ihOutputs.Negate ()).Add (1);
-		sigmoidDerivative = sigmoidDerivative.PointwiseMultiply (ihOutputs);
-		hGrads = grads_weights_sums.TransposeThisAndMultiply (sigmoidDerivative);
+		sigmoidDerivative = ihOutputs.PointwiseMultiply (sigmoidDerivative);
+		hGrads = (grads_weights_sums.Transpose()).PointwiseMultiply (sigmoidDerivative);
 
-		// outputs layer
+		// output layer updates
 		hoBiases = hoBiases.Add (oGrads.Multiply (eta));
 
 		LA.Matrix<float> outer_sum = ihOutputs.TransposeThisAndMultiply (oGrads);
 		hoWeights = hoWeights.Add (outer_sum.Multiply (eta));
 
-		// hidden layer
+		// hidden layer updates
 		ihBiases = ihBiases.Add (hGrads.Multiply (eta));
 
 		LA.Matrix<float> hidden_sum = inputs.TransposeThisAndMultiply (hGrads);
