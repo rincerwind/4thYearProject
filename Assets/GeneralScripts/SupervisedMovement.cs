@@ -12,18 +12,21 @@ public class SupervisedMovement : MonoBehaviour {
 	private Vector3 direction;
 	private bool debug;
 	private NeuralNetwork n;
+	private IList targetValues;
 
 	// Use this for initialization
 	void Start () {
 		debug = false;
 		recordMovement = false;
 		n = gameObject.GetComponent<NeuralNetwork> ();
+		targetValues = new ArrayList ();
 	}
 	
 	// Update is called once per frame
 	void FixedUpdate () {
-		direction = new Vector3 (Input.GetAxis("Horizontal"), 0, Input.GetAxis("Vertical"));
-
+		float upwards = Input.GetAxis ("Vertical");
+		float sides = Input.GetAxis ("Horizontal");
+		direction = new Vector3 (sides, 0, upwards);
 		
 		if( rigidbody.velocity.magnitude < maxSpeed )
 			rigidbody.AddForce (direction * moveSpeed);
@@ -31,8 +34,14 @@ public class SupervisedMovement : MonoBehaviour {
 		//if (transform.position.y < -1)
 		//	player_die ();
 		
-		if( debug == true )
+		if( debug )
 			Debug.Log (direction);
+
+		if ( recordMovement ) {
+			targetValues.Add (new float[]{sides, upwards});
+			return;		
+		}
+
 
 		LA.Matrix<float> inputs = LA.Matrix<float>.Build.Dense (1, 3, new float[] {1.0f, 2.0f, 3.0f});
 		n.ComputeOutputs (inputs);
