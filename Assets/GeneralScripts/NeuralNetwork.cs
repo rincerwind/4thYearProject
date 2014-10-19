@@ -12,6 +12,8 @@ public class NeuralNetwork : MonoBehaviour
 	public int numHidden;
 	public int numOutputs;
 	public int numHiddenLayers;
+	public float eta;
+	public float alpha;
 	private LA.Matrix<float> inputs;
 	private LA.Matrix<float> ihWeights;
 	private LA.Matrix<float> ihBiases;
@@ -19,16 +21,6 @@ public class NeuralNetwork : MonoBehaviour
 	private LA.Matrix<float> hoWeights;
 	private LA.Matrix<float> hoBiases;
 	private LA.Matrix<float> outputs;
-
-	/*private float[,] ih_weights = { {0.1f,0.2f,0.3f,0.4f}, 
-						   			{0.5f,0.6f,0.7f,0.8f}, 
-						   			{0.9f,1.0f,1.1f,1.2f} };
-	private float[,] ho_weights = { {1.3f,1.4f}, 
-									{1.5f,1.6f}, 
-									{1.7f,1.8f}, 
-									{1.9f,2.0f} };
-	private float[] ih_biases = { -2.0f, -6.0f, -1.0f, -7.0f };
-	private float[] ho_biases = { -2.5f, -5.0f };*/
 
 	// ------------------------------------ Initialization ------------------------------------
 	void Start ()
