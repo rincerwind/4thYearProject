@@ -46,6 +46,7 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\GeneralScripts\CameraZoom.cs" />
      <Compile Include="Assets\GeneralScripts\GameManager.cs" />
      <Compile Include="Assets\GeneralScripts\NeuralNetwork.cs" />
      <Compile Include="Assets\GeneralScripts\SupervisedMovement.cs" />

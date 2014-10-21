@@ -4,16 +4,24 @@ using MathNet.Numerics;
 using LA = MathNet.Numerics.LinearAlgebra;
 using DBL = MathNet.Numerics.LinearAlgebra.Double;
 
+/*
+Tasks:
+	Add costFunction to the net
+	Add the "minimize cost function" to the net
+ */
+
 public class NeuralNetwork : MonoBehaviour
 {
 	// ------------------------------------ Properties ------------------------------------
 	public bool TrainingPhase;
+	public int numIterations;
 	public int numInputs;
 	public int numHidden;
 	public int numOutputs;
 	public int numHiddenLayers;
 	public float eta;
 	public float alpha;
+	private int numTestCases;
 	private LA.Matrix<float> inputs;
 	private LA.Matrix<float> ihWeights;
 	private LA.Matrix<float> ihBiases;
@@ -21,6 +29,7 @@ public class NeuralNetwork : MonoBehaviour
 	private LA.Matrix<float> hoWeights;
 	private LA.Matrix<float> hoBiases;
 	private LA.Matrix<float> outputs;
+	private LA.Matrix<float> actual;
 
 	// ------------------------------------ Initialization ------------------------------------
 	void Start ()
@@ -29,10 +38,6 @@ public class NeuralNetwork : MonoBehaviour
 		hoWeights = LA.Matrix<float>.Build.Random (numHidden, numOutputs);
 		ihBiases = LA.Matrix<float>.Build.Random (1, numHidden);
 		hoBiases = LA.Matrix<float>.Build.Random (1, numOutputs);
-	}
-
-	public void setInputs(LA.Matrix<float> newInputs){
-		LA.Matrix<float> temp_out = ComputeOutputs (newInputs);
 	}
 
 	// ------------------------------------ Methods ------------------------------------
@@ -53,6 +58,31 @@ public class NeuralNetwork : MonoBehaviour
 					return 1.0f;
 			else
 					return (float)Trig.Tanh (x);
+	}
+	public float costFunction(LA.Matrix<float> targets){
+		LA.Matrix<float> predicted;
+		LA.Matrix<float> columnSums;
+		LA.Matrix<float> onesVector = LA.Matrix<float>.Build.Dense (1, numOutputs, 1);
+
+		predicted = actual.Subtract (targets);
+		predicted = predicted.PointwisePower (2);
+		predicted = predicted.Multiply (1 / (2*numTestCases));
+
+		columnSums = onesVector.Multiply (predicted);
+
+		float cost = 0.0f;
+		for (int i = 0; i < numTestCases; i++)
+						cost += columnSums [0, i];
+
+		return cost;
+	}
+
+	public LA.Matrix<float> getHOWeights(){
+		return hoWeights;
+	}
+
+	public LA.Matrix<float> getIHWeights(){
+		return ihWeights;
 	}
 
 	// Feed-Forward Part

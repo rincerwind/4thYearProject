@@ -22,21 +22,18 @@ public class SupervisedMovement : MonoBehaviour {
 		target = GameObject.FindGameObjectWithTag("Goal");
 		targetValues = new ArrayList ();
 		initialInputs = new ArrayList ();
-	}
 
-	private float[,] ListToMultiArray(ArrayList a){
-		float[] temp = (float[])a [0];
-		int numInputs = temp.Length;
-		int numTestCases = a.Count;
-		float[,] arrayCpy = new float[numTestCases, numInputs];
-
-		for (int i = 0; i < numTestCases; i++) {
-			temp = (float[])a[i];
-			for (int j = 0; j < numInputs; j++)
-				arrayCpy[i,j] = temp[j];
-		}
-
-		return arrayCpy;
+		/*targetValues.Add (new float[]{0,-1});
+		initialInputs.Add (new float[]{0,0,0,-11});
+		
+		targetValues.Add (new float[]{0,1});
+		initialInputs.Add (new float[]{0,0,0,11});
+		
+		targetValues.Add (new float[]{-1,0});
+		initialInputs.Add (new float[]{0,0,-11,0});
+		
+		targetValues.Add (new float[]{1,0});
+		initialInputs.Add (new float[]{0,0,11,0});*/
 	}
 
 	// Update is called once per frame
@@ -47,34 +44,49 @@ public class SupervisedMovement : MonoBehaviour {
 
 		// Recording Phase
 		if (recordMovement && !n.TrainingPhase) {
+			float deltaX = Mathf.Abs(target.transform.position.x - transform.position.x);
+			float deltaZ = Mathf.Abs(target.transform.position.z - transform.position.z);
+
+			//horizontalMovement = (deltaX <= 5)? 0 : horizontalMovement;
+			//verticalMovement = (deltaZ <= 5)? 0 : verticalMovement;
+
 			targetValues.Add (new float[]{horizontalMovement, verticalMovement});
-			initialInputs.Add (new float[]{transform.position.x, transform.position.z, 
-				target.transform.position.x, target.transform.position.z});
+			initialInputs.Add (new float[]{deltaX, deltaZ});
 		}
 
 		LA.Matrix<float> inputs;
 		LA.Matrix<float> targetOutputs;
 		LA.Matrix<float> outputs;
 
-		inputs = LA.Matrix<float>.Build.Dense (1, 4, new float[]{transform.position.x, transform.position.z,
-													target.transform.position.x, target.transform.position.z});
+		inputs = LA.Matrix<float>.Build.Dense (1, n.numInputs, new float[]{
+			Mathf.Abs(target.transform.position.x - transform.position.x),
+			Mathf.Abs(target.transform.position.z - transform.position.z)});
 
 		// Learning Phase
 		if ( !recordMovement && n.TrainingPhase ) {
-			inputs = LA.Matrix<float>.Build.Dense(1, 4, (float[])initialInputs[0] );
-			outputs = n.ComputeOutputs(inputs);
-
-			for(int i = 1; i <= 130; i++){
+			int i;
+			int count = initialInputs.Count;
+			for( i = 1; i <= n.numIterations && count > 0; i++){
+				count = 0;
 				for( int j = 0; j < initialInputs.Count; j++ ){
-					inputs = LA.Matrix<float>.Build.DenseOfColumnMajor(1, 4, (float[])initialInputs[j] );
-					targetOutputs = LA.Matrix<float>.Build.DenseOfColumnMajor(1, 2, (float[])targetValues[j] );
+					inputs = LA.Matrix<float>.Build.DenseOfColumnMajor(1, n.numInputs, (float[])initialInputs[j] );
+					targetOutputs = LA.Matrix<float>.Build.DenseOfColumnMajor(1, n.numOutputs, (float[])targetValues[j] );
+					outputs = n.ComputeOutputs(inputs);
+
+					if( n.error(targetOutputs) <= 0.01 ){
+						continue;
+					}
+					count++;
+					// count Mean Squared Error here and try to minimize it
 					n.UpdateWeights(targetOutputs, n.eta, n.alpha);
 					outputs = n.ComputeOutputs(inputs);
 				}
 			}
+			Debug.Log(i);
 			n.TrainingPhase = false;
-			targetValues = new ArrayList ();
-			initialInputs = new ArrayList ();
+			//targetValues = new ArrayList ();
+			//initialInputs = new ArrayList ();
+			return;
 		}
 
 		// Neural Net in action
@@ -87,7 +99,8 @@ public class SupervisedMovement : MonoBehaviour {
 
 		if( rigidbody.velocity.magnitude < maxSpeed )
 			rigidbody.AddForce (direction * moveSpeed);
-		
+
+		//Debug.Log ("Clear");
 		//if (transform.position.y < -1)
 		//	player_die ();
 	}
