@@ -4,12 +4,6 @@ using MathNet.Numerics;
 using LA = MathNet.Numerics.LinearAlgebra;
 using DBL = MathNet.Numerics.LinearAlgebra.Double;
 
-/*
-Tasks:
-	Add costFunction to the net
-	Add the "minimize cost function" to the net
- */
-
 public class NeuralNetwork : MonoBehaviour
 {
 	// ------------------------------------ Properties ------------------------------------
@@ -19,8 +13,8 @@ public class NeuralNetwork : MonoBehaviour
 	public int numHidden;
 	public int numOutputs;
 	public int numHiddenLayers;
-	public float eta;
-	public float alpha;
+	public float learningRate;
+	public float momentum;
 	private int numTestCases;
 	private LA.Matrix<float> inputs;
 	private LA.Matrix<float> ihWeights;
@@ -28,8 +22,7 @@ public class NeuralNetwork : MonoBehaviour
 	private LA.Matrix<float> ihOutputs;
 	private LA.Matrix<float> hoWeights;
 	private LA.Matrix<float> hoBiases;
-	private LA.Matrix<float> outputs;
-	private LA.Matrix<float> actual;
+	private LA.Matrix<float> outputs;	// holds the current output of the Net
 
 	// ------------------------------------ Initialization ------------------------------------
 	void Start ()
@@ -40,8 +33,18 @@ public class NeuralNetwork : MonoBehaviour
 		hoBiases = LA.Matrix<float>.Build.Random (1, numOutputs);
 	}
 
+	// ------------------------------------ Getters ------------------------------------
+	public LA.Matrix<float> GetOutputWeights(){
+		return hoWeights;
+	}
+	
+	public LA.Matrix<float> GetHiddenWeights(){
+		return ihWeights;
+	}
+
+
 	// ------------------------------------ Methods ------------------------------------
-	public float sigmoid (float x)
+	private float sigmoid (float x)
 	{
 			if (x < -45.0f)
 					return 0.0f;
@@ -50,7 +53,8 @@ public class NeuralNetwork : MonoBehaviour
 			else
 					return 1 / (1 + Mathf.Exp(-x));
 	}
-	public float hyperTan (float x)
+
+	private float hyperTan (float x)
 	{
 			if (x < -10.0f) 
 					return -1.0f;
@@ -59,39 +63,31 @@ public class NeuralNetwork : MonoBehaviour
 			else
 					return (float)Trig.Tanh (x);
 	}
-	public float costFunction(LA.Matrix<float> targets){
+
+	public float CostFunction(LA.Matrix<float> targets, LA.Matrix<float> actual){
 		LA.Matrix<float> predicted;
-		LA.Matrix<float> columnSums;
-		LA.Matrix<float> onesVector = LA.Matrix<float>.Build.Dense (1, numOutputs, 1);
+		LA.Vector<float> columnSums;
 
 		predicted = actual.Subtract (targets);
 		predicted = predicted.PointwisePower (2);
-		predicted = predicted.Multiply (1 / (2*numTestCases));
+		predicted = predicted.Divide ((float)(2*numTestCases));
 
-		columnSums = onesVector.Multiply (predicted);
+		columnSums = predicted.RowSums();
 
 		float cost = 0.0f;
 		for (int i = 0; i < numTestCases; i++)
-						cost += columnSums [0, i];
+						cost += columnSums [i];
 
 		return cost;
 	}
 
-	public LA.Matrix<float> getHOWeights(){
-		return hoWeights;
-	}
-
-	public LA.Matrix<float> getIHWeights(){
-		return ihWeights;
-	}
-
-	// Feed-Forward Part
+	// ---------------------------- Feed-Forward Part ----------------------------
 	public LA.Matrix<float> ComputeOutputs(LA.Matrix<float> newInputs){
 		LA.Matrix<float> ihSums;
 		LA.Matrix<float> hoSums;
-
 		inputs = newInputs;
-		ihSums = newInputs.Multiply (ihWeights);
+
+		ihSums = inputs.Multiply (ihWeights);
 		ihOutputs = ihSums.Add (ihBiases);
 
 		for (int i = 0; i < numHidden; i++)
@@ -106,10 +102,13 @@ public class NeuralNetwork : MonoBehaviour
 		return outputs;
 	}
 
-	// Back-Propagation Part
-	public void UpdateWeights(LA.Matrix<float> targetOutputs, float eta, float alpha){
+	// ---------------------------- Back-Propagation Part----------------------------
+
+	// returns the deltas in the different layers
+	public ArrayList ComputeDeltas(LA.Matrix<float> targetOutputs, float eta, float alpha){
 		LA.Matrix<float> oGrads;
 		LA.Matrix<float> hGrads;
+		ArrayList deltas = new ArrayList();
 
 		// Compute output gradient
 		LA.Matrix<float> hyperTanDerivative = (outputs.Negate()).Add(1);
@@ -122,18 +121,70 @@ public class NeuralNetwork : MonoBehaviour
 		sigmoidDerivative = ihOutputs.PointwiseMultiply (sigmoidDerivative);
 		hGrads = (grads_weights_sums.Transpose()).PointwiseMultiply (sigmoidDerivative);
 
-		// output layer updates
-		hoBiases = hoBiases.Add (oGrads.Multiply (eta));
-
 		LA.Matrix<float> outer_sum = ihOutputs.TransposeThisAndMultiply (oGrads);
-		hoWeights = hoWeights.Add (outer_sum.Multiply (eta));
-
-		// hidden layer updates
-		ihBiases = ihBiases.Add (hGrads.Multiply (eta));
-
 		LA.Matrix<float> hidden_sum = inputs.TransposeThisAndMultiply (hGrads);
-		ihWeights = ihWeights.Add (hidden_sum.Multiply (eta));
+
+		deltas.Add	(oGrads.Multiply (eta)); 		// oDeltaBias
+		deltas.Add	(outer_sum.Multiply (eta));		// oDelta
+		deltas.Add	(hGrads.Multiply (eta));		// hDeltaBias
+		deltas.Add	(hidden_sum.Multiply (eta));	// hDelta
+
+		return deltas;
 	}
+
+	public void LearningPhase(ArrayList inputCases, ArrayList targetCases, float target_cost){
+		numTestCases = targetCases.Count / numOutputs;
+		//Debug.Log (targetCases);
+		// convert input ArrayLists to Matrices
+		float[] temp_targets = (float[])targetCases.ToArray (typeof(float));
+
+		LA.Matrix<float> targets = LA.Matrix<float>.Build.Dense(numTestCases, numOutputs, temp_targets);
+
+		float[] temp_inputs = (float[])inputCases.ToArray (typeof(float));
+		LA.Matrix<float> inputs = LA.Matrix<float>.Build.Dense(numTestCases, numInputs, temp_inputs);
+
+		LA.Matrix<float> actual = LA.Matrix<float>.Build.Dense (numTestCases, numOutputs, 0);
+		float current_cost = CostFunction (targets, actual);
+
+		ArrayList deltas; // store hidden/output layer bias deltas and weights deltas
+
+		LA.Matrix<float> currInput;
+		LA.Matrix<float> currTarget;
+
+		for(int i = 1; i <= numIterations && current_cost > target_cost; i++){
+			// Acumulate deltas (Needed for weight updates)
+			// Given in the same order by UpdateWeights
+			LA.Matrix<float> deltaOutputBias = LA.Matrix<float>.Build.Dense (1, numOutputs, 0);
+			LA.Matrix<float> deltaOutput = LA.Matrix<float>.Build.Dense (numHidden, numOutputs, 0);
+			
+			LA.Matrix<float> deltaHiddenBias = LA.Matrix<float>.Build.Dense (1, numHidden, 0);
+			LA.Matrix<float> deltaHidden = LA.Matrix<float>.Build.Dense (numInputs, numHidden, 0);
+
+			for (int m = 0; m < numTestCases; m++) {
+				currInput = (inputs.Row(m)).ToRowMatrix();
+				currTarget = (targets.Row(m)).ToRowMatrix();
+				outputs = ComputeOutputs(currInput);
+
+				actual.SetRow(m, outputs.Row(0));
+				deltas = ComputeDeltas(currTarget, learningRate, momentum);
+
+				deltaOutputBias = deltaOutputBias.Add((LA.Matrix<float>)deltas[0]);
+				deltaOutput = deltaOutput.Add((LA.Matrix<float>)deltas[1]);
+				deltaHiddenBias = deltaHiddenBias.Add((LA.Matrix<float>)deltas[2]);
+				deltaHidden = deltaHidden.Add((LA.Matrix<float>)deltas[3]);
+			}
+			// UpdateWeights
+			hoBiases = hoBiases.Add (deltaOutputBias.Divide(numTestCases));
+			hoWeights = hoWeights.Add (deltaOutput.Divide(numTestCases));
+			ihBiases = ihBiases.Add (deltaHiddenBias.Divide(numTestCases));
+			ihWeights = ihWeights.Add (deltaHidden.Divide(numTestCases));
+
+			// Compute new Cost
+			current_cost = CostFunction(targets, actual);
+		}
+		Debug.Log(current_cost);
+	}
+
 	// Use this for initialization
 	/*
 	

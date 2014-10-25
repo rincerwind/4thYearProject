@@ -22,18 +22,6 @@ public class SupervisedMovement : MonoBehaviour {
 		target = GameObject.FindGameObjectWithTag("Goal");
 		targetValues = new ArrayList ();
 		initialInputs = new ArrayList ();
-
-		/*targetValues.Add (new float[]{0,-1});
-		initialInputs.Add (new float[]{0,0,0,-11});
-		
-		targetValues.Add (new float[]{0,1});
-		initialInputs.Add (new float[]{0,0,0,11});
-		
-		targetValues.Add (new float[]{-1,0});
-		initialInputs.Add (new float[]{0,0,-11,0});
-		
-		targetValues.Add (new float[]{1,0});
-		initialInputs.Add (new float[]{0,0,11,0});*/
 	}
 
 	// Update is called once per frame
@@ -44,14 +32,13 @@ public class SupervisedMovement : MonoBehaviour {
 
 		// Recording Phase
 		if (recordMovement && !n.TrainingPhase) {
-			float deltaX = Mathf.Abs(target.transform.position.x - transform.position.x);
-			float deltaZ = Mathf.Abs(target.transform.position.z - transform.position.z);
+			float deltaX = target.transform.position.x - transform.position.x;
+			float deltaZ = target.transform.position.z - transform.position.z;
 
-			//horizontalMovement = (deltaX <= 5)? 0 : horizontalMovement;
-			//verticalMovement = (deltaZ <= 5)? 0 : verticalMovement;
-
-			targetValues.Add (new float[]{horizontalMovement, verticalMovement});
-			initialInputs.Add (new float[]{deltaX, deltaZ});
+			targetValues.Add (horizontalMovement);
+			targetValues.Add (verticalMovement);
+			initialInputs.Add (deltaX);
+			initialInputs.Add (deltaZ);
 		}
 
 		LA.Matrix<float> inputs;
@@ -59,39 +46,17 @@ public class SupervisedMovement : MonoBehaviour {
 		LA.Matrix<float> outputs;
 
 		inputs = LA.Matrix<float>.Build.Dense (1, n.numInputs, new float[]{
-			Mathf.Abs(target.transform.position.x - transform.position.x),
-			Mathf.Abs(target.transform.position.z - transform.position.z)});
+				target.transform.position.x - transform.position.x,
+				target.transform.position.z - transform.position.z});
 
 		// Learning Phase
 		if ( !recordMovement && n.TrainingPhase ) {
-			int i;
-			int count = initialInputs.Count;
-			for( i = 1; i <= n.numIterations && count > 0; i++){
-				count = 0;
-				for( int j = 0; j < initialInputs.Count; j++ ){
-					inputs = LA.Matrix<float>.Build.DenseOfColumnMajor(1, n.numInputs, (float[])initialInputs[j] );
-					targetOutputs = LA.Matrix<float>.Build.DenseOfColumnMajor(1, n.numOutputs, (float[])targetValues[j] );
-					outputs = n.ComputeOutputs(inputs);
-
-					if( n.error(targetOutputs) <= 0.01 ){
-						continue;
-					}
-					count++;
-					// count Mean Squared Error here and try to minimize it
-					n.UpdateWeights(targetOutputs, n.eta, n.alpha);
-					outputs = n.ComputeOutputs(inputs);
-				}
-			}
-			Debug.Log(i);
+			n.LearningPhase(initialInputs, targetValues, 0.03f);
 			n.TrainingPhase = false;
-			//targetValues = new ArrayList ();
-			//initialInputs = new ArrayList ();
-			return;
 		}
 
 		// Neural Net in action
-		if ( !recordMovement && !n.TrainingPhase )
-		{
+		if ( !recordMovement && !n.TrainingPhase ){
 			outputs = n.ComputeOutputs(inputs);
 			direction.x = outputs[0,0];
 			direction.z = outputs[0,1];
