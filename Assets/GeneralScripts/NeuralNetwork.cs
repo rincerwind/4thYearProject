@@ -13,9 +13,11 @@ public class NeuralNetwork : MonoBehaviour
 	public int numHidden;
 	public int numOutputs;
 	public int numHiddenLayers;
+	public float allowedError;
 	public float learningRate;
 	public float momentum;
 	private int numTestCases;
+
 	private LA.Matrix<float> inputs;
 	private LA.Matrix<float> ihWeights;
 	private LA.Matrix<float> ihBiases;
@@ -62,6 +64,40 @@ public class NeuralNetwork : MonoBehaviour
 					return 1.0f;
 			else
 					return (float)Trig.Tanh (x);
+	}
+
+	private float sampleMean(LA.Vector<float> sample){
+		float mean = 0.0f;
+
+		foreach (var elm in sample)
+			mean += (float)elm;
+
+		return mean / sample.Count;
+	}
+
+	private float sampleStandardDeviation(LA.Vector<float> sample, float mean){
+		float variance = 0.0f;
+
+		foreach (var elm in sample){
+			float difference = (float)elm - mean;
+			variance += difference * difference;
+		}
+
+		return Mathf.Sqrt (variance / (sample.Count - 1));
+	}
+
+	private void Normalization(LA.Matrix<float> table){
+		int numColumns = table.ColumnCount;
+		LA.Vector<float> normColumn;
+
+		for (int i = 0; i < numColumns; i++) {
+			float mean = sampleMean(table.Column(i));
+			float sd = sampleStandardDeviation(table.Column(i), mean);
+
+			normColumn = (table.Column(i)).Subtract(mean);
+			normColumn = normColumn.Divide(sd);
+			table.SetColumn(i, normColumn);
+		}
 	}
 
 	public float CostFunction(LA.Matrix<float> targets, LA.Matrix<float> actual){
@@ -142,6 +178,7 @@ public class NeuralNetwork : MonoBehaviour
 
 		float[] temp_inputs = (float[])inputCases.ToArray (typeof(float));
 		LA.Matrix<float> inputs = LA.Matrix<float>.Build.Dense(numTestCases, numInputs, temp_inputs);
+		//Normalization (inputs);
 
 		LA.Matrix<float> actual = LA.Matrix<float>.Build.Dense (numTestCases, numOutputs, 0);
 		float current_cost = CostFunction (targets, actual);

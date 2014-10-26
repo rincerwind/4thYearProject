@@ -8,8 +8,7 @@ public class SupervisedMovement : MonoBehaviour {
 	public float moveSpeed;
 	public float acceleration;
 	public bool recordMovement;
-	
-	private bool debug;
+
 	private NeuralNetwork n;
 	private ArrayList targetValues;
 	private ArrayList initialInputs;
@@ -17,7 +16,6 @@ public class SupervisedMovement : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		debug = false;
 		n = gameObject.GetComponent<NeuralNetwork> ();
 		target = GameObject.FindGameObjectWithTag("Goal");
 		targetValues = new ArrayList ();
@@ -42,7 +40,6 @@ public class SupervisedMovement : MonoBehaviour {
 		}
 
 		LA.Matrix<float> inputs;
-		LA.Matrix<float> targetOutputs;
 		LA.Matrix<float> outputs;
 
 		inputs = LA.Matrix<float>.Build.Dense (1, n.numInputs, new float[]{
@@ -51,7 +48,7 @@ public class SupervisedMovement : MonoBehaviour {
 
 		// Learning Phase
 		if ( !recordMovement && n.TrainingPhase ) {
-			n.LearningPhase(initialInputs, targetValues, 0.03f);
+			n.LearningPhase(initialInputs, targetValues, n.allowedError);
 			n.TrainingPhase = false;
 		}
 
