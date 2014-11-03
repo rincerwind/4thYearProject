@@ -8,6 +8,7 @@ public class SupervisedMovement : MonoBehaviour {
 	public float moveSpeed;
 	public float acceleration;
 	public bool recordMovement;
+	public bool debug_movement;
 
 	private NeuralNetwork n;
 	private ArrayList targetValues;
@@ -53,7 +54,7 @@ public class SupervisedMovement : MonoBehaviour {
 		}
 
 		// Neural Net in action
-		if ( !recordMovement && !n.TrainingPhase ){
+		if ( !debug_movement && !recordMovement && !n.TrainingPhase ){
 			outputs = n.ComputeOutputs(inputs);
 			direction.x = outputs[0,0];
 			direction.z = outputs[0,1];

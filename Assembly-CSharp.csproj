@@ -49,6 +49,7 @@
      <Compile Include="Assets\GeneralScripts\CameraZoom.cs" />
      <Compile Include="Assets\GeneralScripts\GameManager.cs" />
      <Compile Include="Assets\GeneralScripts\NeuralNetwork.cs" />
+     <Compile Include="Assets\GeneralScripts\RadialGridSensor.cs" />
      <Compile Include="Assets\GeneralScripts\SupervisedMovement.cs" />
      <Compile Include="Assets\Objects\Agent\FollowPlayer.cs" />
      <Compile Include="Assets\Objects\FogOfWar\FogOfWarPlayer.cs" />
