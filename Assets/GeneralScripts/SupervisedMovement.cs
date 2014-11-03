@@ -25,6 +25,8 @@ public class SupervisedMovement : MonoBehaviour {
 
 	// Update is called once per frame
 	void FixedUpdate () {
+		LA.Matrix<float> inputs;
+		LA.Matrix<float> outputs;
 		float verticalMovement = Input.GetAxis ("Vertical");
 		float horizontalMovement = Input.GetAxis ("Horizontal");
 		Vector3 direction = new Vector3 (horizontalMovement, 0, verticalMovement);
@@ -39,9 +41,6 @@ public class SupervisedMovement : MonoBehaviour {
 			initialInputs.Add (deltaX);
 			initialInputs.Add (deltaZ);
 		}
-
-		LA.Matrix<float> inputs;
-		LA.Matrix<float> outputs;
 
 		inputs = LA.Matrix<float>.Build.Dense (1, n.numInputs, new float[]{
 				target.transform.position.x - transform.position.x,
