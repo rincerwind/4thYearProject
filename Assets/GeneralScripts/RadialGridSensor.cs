@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class RaySensor : MonoBehaviour {
+public class RadialGridSensor : MonoBehaviour {
 	public int radius;	// The farthest semi-circle of the sensor
 	public int sectors;	// Number of sectors in the sensor
 	public int depth;	// Number of semi-circles
