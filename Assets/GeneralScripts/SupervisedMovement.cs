@@ -60,7 +60,7 @@ public class SupervisedMovement : MonoBehaviour {
 		}
 
 		if( rigidbody.velocity.magnitude < maxSpeed )
-			rigidbody.AddForce (direction * moveSpeed);
+			rigidbody.AddForce (transform.rotation * direction * moveSpeed);
 
 		//Debug.Log ("Clear");
 		//if (transform.position.y < -1)
