@@ -68,11 +68,11 @@ public class RadialGridSensor : MonoBehaviour {
 		
 		drawOutterRays (ref rays, ref magnitudes, ref currRayDirection, ref depth);
 
-		for (int i = 0; i < rays.Count; i++) {
+		/*for (int i = 0; i < rays.Count; i++) {
 			Ray currRay = (Ray)rays[i];
 
 			if (Physics.Raycast (currRay, out hitInfo, (float)magnitudes[i]) )
 				Debug.Log ("I hit something: " + hitInfo.collider.tag);
-		}
+		}*/
 	}// end of Update
 }// end of class

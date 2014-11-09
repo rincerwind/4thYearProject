@@ -8,19 +8,21 @@ public class SupervisedMovement : MonoBehaviour {
 	public float moveSpeed;
 	public float acceleration;
 	public bool recordMovement;
-	public bool debug_movement;
+	public bool debugMovement;
 
-	private NeuralNetwork n;
+	private NeuralNetwork[] nets;
 	private ArrayList targetValues;
 	private ArrayList initialInputs;
 	private GameObject target;
+	private NextGoal g;
 
 	// Use this for initialization
 	void Start () {
-		n = gameObject.GetComponent<NeuralNetwork> ();
+		nets = gameObject.GetComponents<NeuralNetwork> ();
 		target = GameObject.FindGameObjectWithTag("Goal");
 		targetValues = new ArrayList ();
 		initialInputs = new ArrayList ();
+		g = target.GetComponent<NextGoal>();
 	}
 
 	// Update is called once per frame
@@ -32,7 +34,7 @@ public class SupervisedMovement : MonoBehaviour {
 		Vector3 direction = new Vector3 (horizontalMovement, 0, verticalMovement);
 
 		// Recording Phase
-		if (recordMovement && !n.TrainingPhase) {
+		if (recordMovement && !nets[0].TrainingPhase) {
 			float deltaX = target.transform.position.x - transform.position.x;
 			float deltaZ = target.transform.position.z - transform.position.z;
 
@@ -42,28 +44,42 @@ public class SupervisedMovement : MonoBehaviour {
 			initialInputs.Add (deltaZ);
 		}
 
-		inputs = LA.Matrix<float>.Build.Dense (1, n.numInputs, new float[]{
-				target.transform.position.x - transform.position.x,
-				target.transform.position.z - transform.position.z});
-
 		// Learning Phase
-		if ( !recordMovement && n.TrainingPhase ) {
-			n.LearningPhase(initialInputs, targetValues, n.allowedError);
-			n.TrainingPhase = false;
+		if ( !recordMovement && nets[0].TrainingPhase ) {
+			nets[0].LearningPhase(initialInputs, targetValues, nets[0].allowedError);
+			nets[0].TrainingPhase = false;
 		}
 
+		inputs = LA.Matrix<float>.Build.Dense (1, nets[0].numInputs, new float[]{
+			target.transform.position.x - transform.position.x,
+			target.transform.position.z - transform.position.z});
+
 		// Neural Net in action
-		if ( !debug_movement && !recordMovement && !n.TrainingPhase ){
-			outputs = n.ComputeOutputs(inputs);
+		if ( !debugMovement && !recordMovement && !nets[0].TrainingPhase ){
+			outputs = nets[0].ComputeOutputs(inputs);
 			direction.x = outputs[0,0];
 			direction.z = outputs[0,1];
 		}
 
 		if( rigidbody.velocity.magnitude < maxSpeed )
 			rigidbody.AddForce (transform.rotation * direction * moveSpeed);
+	}// end of FixedUpdate
 
-		//Debug.Log ("Clear");
-		//if (transform.position.y < -1)
-		//	player_die ();
+	void OnTriggerEnter(Collider c){
+		switch (WorldManager.currentLevel){
+			case 0:
+				if( c.transform.tag == "Goal" ){
+					if( g == null || ( g != null && g.isLastGoal() ) )
+						WorldManager.CompleteLevel();
+					else{
+						g.goToNextGoal();
+						target.transform.position = (g.getCurrentGoal()).position;
+					}
+				}
+				break;
+			default:
+				WorldManager.CompleteLevel();
+				break;
+		}
 	}
-}
+}// end of class
