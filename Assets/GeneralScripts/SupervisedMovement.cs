@@ -7,9 +7,10 @@ public class SupervisedMovement : MonoBehaviour {
 	public float maxSpeed;
 	public float moveSpeed;
 	public float acceleration;
+	public float rotateSpeed;
 	public bool recordMovement;
 	public bool debugMovement;
-
+	
 	private NeuralNetwork[] nets;
 	private ArrayList targetValues;
 	private ArrayList initialInputs;
@@ -60,6 +61,15 @@ public class SupervisedMovement : MonoBehaviour {
 			direction.x = outputs[0,0];
 			direction.z = outputs[0,1];
 		}
+
+		float amount = 0f;
+		if ( Input.GetKey("c") )
+			amount = -1 * Time.deltaTime * rotateSpeed;
+		
+		if ( Input.GetKey("v") )
+			amount = 1 * Time.deltaTime * rotateSpeed;
+
+		rigidbody.AddTorque(transform.up * amount, ForceMode.Acceleration);
 
 		if( rigidbody.velocity.magnitude < maxSpeed )
 			rigidbody.AddForce (transform.rotation * direction * moveSpeed);
