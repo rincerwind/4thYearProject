@@ -45,7 +45,7 @@ public class SupervisedMovement : MonoBehaviour {
 			initialInputs.Add (deltaZ);
 		}
 
-		// Learning Phase
+		// Learning Phase of Navigation Net
 		if ( !recordMovement && nets[0].TrainingPhase ) {
 			nets[0].LearningPhase(initialInputs, targetValues, nets[0].allowedError);
 			nets[0].TrainingPhase = false;
@@ -55,26 +55,34 @@ public class SupervisedMovement : MonoBehaviour {
 			target.transform.position.x - transform.position.x,
 			target.transform.position.z - transform.position.z});
 
-		// Neural Net in action
+		// Navigation Net in action
 		if ( !debugMovement && !recordMovement && !nets[0].TrainingPhase ){
 			outputs = nets[0].ComputeOutputs(inputs);
 			direction.x = outputs[0,0];
 			direction.z = outputs[0,1];
 		}
 
+		// Manual rotation
 		float amount = 0f;
 		if ( Input.GetKey("c") )
 			amount = -1 * Time.deltaTime * rotateSpeed;
-		
+
 		if ( Input.GetKey("v") )
 			amount = 1 * Time.deltaTime * rotateSpeed;
 
 		rigidbody.AddTorque(transform.up * amount, ForceMode.Acceleration);
 
+		// Manual movement
 		if( rigidbody.velocity.magnitude < maxSpeed )
 			rigidbody.AddForce (transform.rotation * direction * moveSpeed);
 	}// end of FixedUpdate
 
+	// On level 0, teach the Navigation Net
+	// On level 1, teach the Collision Avoidance Net
+	// On level 2, test going towards a goal
+	// On level 3, test going towards a goal and avoiding small objects
+	// On level 4, test going towards a goal and avoiding large objects
+	// On level 5, test going towards a goal and avoiding a mixed-size objects
 	void OnTriggerEnter(Collider c){
 		switch (WorldManager.currentLevel){
 			case 0:
