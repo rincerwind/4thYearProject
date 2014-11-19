@@ -7,8 +7,13 @@ public class WorldManager : MonoBehaviour {
 	private static int lastLevel;
 
 	void Start(){
+		NeuralNetwork[] nets = GetComponents<NeuralNetwork>();
+		foreach (NeuralNetwork n in nets)
+			DontDestroyOnLoad(n);
+
 		DontDestroyOnLoad(gameObject);
 		lastLevel = Application.levelCount - 1;
+		print (lastLevel);
 	}
 
 	public static void CompleteLevel(){

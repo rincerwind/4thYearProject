@@ -51,7 +51,8 @@ public class SupervisedMovement : MonoBehaviour {
 			nets[0].TrainingPhase = false;
 		}
 
-		inputs = LA.Matrix<float>.Build.Dense (1, nets[0].numInputs, new float[]{
+		inputs = LA.Matrix<float>.Build.Dense (1, 
+		    nets[0].numInputs, new float[]{
 			target.transform.position.x - transform.position.x,
 			target.transform.position.z - transform.position.z});
 
