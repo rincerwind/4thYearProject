@@ -7,7 +7,6 @@ using DBL = MathNet.Numerics.LinearAlgebra.Double;
 public class NeuralNetwork : MonoBehaviour
 {
 	// ------------------------------------ Properties ------------------------------------
-	public bool TrainingPhase;
 	public int numIterations;
 	public int numInputs;
 	public int numHidden;
@@ -16,8 +15,10 @@ public class NeuralNetwork : MonoBehaviour
 	public float allowedError;
 	public float learningRate;
 	public float momentum;
-	private int numTestCases;
+	public ArrayList allOutputs;
+	public ArrayList allInputs;
 
+	private int numTestCases;	
 	private LA.Matrix<float> inputs;
 	private LA.Matrix<float> ihWeights;
 	private LA.Matrix<float> ihBiases;
@@ -33,6 +34,8 @@ public class NeuralNetwork : MonoBehaviour
 		hoWeights = LA.Matrix<float>.Build.Random (numHidden, numOutputs);
 		ihBiases = LA.Matrix<float>.Build.Random (1, numHidden);
 		hoBiases = LA.Matrix<float>.Build.Random (1, numOutputs);
+		allOutputs = new ArrayList ();
+		allInputs = new ArrayList ();
 	}
 
 	// ------------------------------------ Getters ------------------------------------
@@ -43,7 +46,6 @@ public class NeuralNetwork : MonoBehaviour
 	public LA.Matrix<float> GetHiddenWeights(){
 		return ihWeights;
 	}
-
 
 	// ------------------------------------ Methods ------------------------------------
 	private float sigmoid (float x)
@@ -173,7 +175,7 @@ public class NeuralNetwork : MonoBehaviour
 		//Debug.Log (targetCases);
 		// convert input ArrayLists to Matrices
 		float[] temp_targets = (float[])targetCases.ToArray (typeof(float));
-
+		print (numTestCases);
 		LA.Matrix<float> targets = LA.Matrix<float>.Build.Dense(numTestCases, numOutputs, temp_targets);
 
 		float[] temp_inputs = (float[])inputCases.ToArray (typeof(float));
@@ -221,12 +223,4 @@ public class NeuralNetwork : MonoBehaviour
 		}
 		Debug.Log(current_cost);
 	}
-
-	// Use this for initialization
-	/*
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}*/
 }

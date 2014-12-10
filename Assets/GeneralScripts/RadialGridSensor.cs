@@ -9,7 +9,7 @@ public class RadialGridSensor : MonoBehaviour {
 	private Vector3 sensorOrigin;
 	private Vector3 initRayDirection = new Vector3 (1, 0, 0);
 	
-	private void drawRedZoneRays(ref ArrayList rays){
+	/*private void drawRedZoneRays(ref ArrayList rays){
 		float sphereRadius = transform.parent.GetComponent<SphereCollider>().radius * transform.parent.localScale.x;
 
 		// init ray origins
@@ -20,7 +20,7 @@ public class RadialGridSensor : MonoBehaviour {
 		rightRayOrigin.x += sphereRadius;
 
 		// init rays
-		Ray leftRay = new Ray(leftRayOrigin, leftRayOrigin + transform.rotation * Vector3.forward);
+		Ray leftRay = new Ray(leftRayOrigin, transform.rotation * Vector3.forward);
 		Ray rightRay = new Ray(rightRayOrigin, transform.rotation * Vector3.forward);
 
 		Debug.DrawRay(leftRay.origin, leftRay.direction * radius);
@@ -28,7 +28,7 @@ public class RadialGridSensor : MonoBehaviour {
 
 		rays.Add(leftRay);
 		rays.Add(rightRay);
-	}
+	}*/
 
 	private void drawRays(ref ArrayList rays, 
 	                            ref Vector3 rayDirection){
@@ -37,7 +37,7 @@ public class RadialGridSensor : MonoBehaviour {
 		rays.Add(r1);
 	}
 	
-	private ArrayList collisionCheck(ref ArrayList rays, int layerMask){
+	public ArrayList collisionCheck(ref ArrayList rays, int layerMask){
 		ArrayList hits = new ArrayList();
 		RaycastHit hitInfo;
 
@@ -57,7 +57,7 @@ public class RadialGridSensor : MonoBehaviour {
 
 		ArrayList rays = new ArrayList();
 		ArrayList hits = new ArrayList();
-		int layerMask = ~(1<<LayerMask.NameToLayer("Player")); // collide with everything that is not a Player
+		int layerMask = ~(1<<LayerMask.NameToLayer("Player") | 1<<LayerMask.NameToLayer("Goal")); // collide with everything that is not a Player
 
 		// Init some variables
 		sensorOrigin = new Vector3 (transform.position.x, 
