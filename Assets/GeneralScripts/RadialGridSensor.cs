@@ -32,13 +32,39 @@ public class RadialGridSensor : MonoBehaviour {
 
 	private void drawRays(ref ArrayList rays, 
 	                            ref Vector3 rayDirection){
-		Debug.DrawRay(sensorOrigin, rayDirection * radius);
+		//Debug.DrawRay(sensorOrigin, rayDirection * radius);
 		Ray r1 = new Ray(sensorOrigin, rayDirection);
 		rays.Add(r1);
 	}
 	
-	public ArrayList collisionCheck(ref ArrayList rays, int layerMask){
+	public ArrayList collisionCheck(){
+		Vector3 currRayDirection;
+		
+		ArrayList rays = new ArrayList();
 		ArrayList hits = new ArrayList();
+
+		// collide with everything that is not a Player
+		int layerMask = ~(1<<LayerMask.NameToLayer("Player") | 1<<LayerMask.NameToLayer("Goal"));
+		
+		// Init some variables
+		sensorOrigin = new Vector3 (transform.position.x, 
+		                            transform.position.y-0.3f, 
+		                            transform.position.z);
+		
+		currRayDirection = transform.rotation * initRayDirection;
+		float rot_angle = visionAngle / sectors;
+		currRayDirection = Quaternion.AngleAxis( -(180 - visionAngle)/2, Vector3.up ) * currRayDirection;
+		
+		// Draw Radial Grid
+		for( int curr_sector = 1; curr_sector <= sectors; curr_sector ++ ) {
+			drawRays(ref rays, ref currRayDirection);
+			currRayDirection = Quaternion.AngleAxis( -rot_angle, Vector3.up ) * currRayDirection;
+			//drawRedZoneRays(ref rays);
+		}
+		
+		drawRays (ref rays, ref currRayDirection);
+
+		// Check for collisions
 		RaycastHit hitInfo;
 
 		for(int i = 0; i < rays.Count; i++){
@@ -46,38 +72,11 @@ public class RadialGridSensor : MonoBehaviour {
 			
 			if( Physics.Raycast( curr, out hitInfo, radius, layerMask ) ){
 				Debug.DrawRay( curr.origin, curr.direction * hitInfo.distance, Color.red );
-				hits.Add (hitInfo);
+				hits.Add (1);
 			}
+			else
+				hits.Add (0);
 		}
 		return hits;
 	}
-
-	void Update(){
-		Vector3 currRayDirection;
-
-		ArrayList rays = new ArrayList();
-		ArrayList hits = new ArrayList();
-		int layerMask = ~(1<<LayerMask.NameToLayer("Player") | 1<<LayerMask.NameToLayer("Goal")); // collide with everything that is not a Player
-
-		// Init some variables
-		sensorOrigin = new Vector3 (transform.position.x, 
-		                            transform.position.y-0.3f, 
-		                           	transform.position.z);
-		
-		currRayDirection = transform.rotation * initRayDirection;
-		float rot_angle = visionAngle / sectors;
-		currRayDirection = Quaternion.AngleAxis( -(180 - visionAngle)/2, Vector3.up ) * currRayDirection;
-
-		// Draw Radial Grid
-		for( int curr_sector = 1; curr_sector <= sectors; curr_sector ++ ) {
-			drawRays(ref rays, ref currRayDirection);
-			currRayDirection = Quaternion.AngleAxis( -rot_angle, Vector3.up ) * currRayDirection;
-			//drawRedZoneRays(ref rays);
-		}
-
-		drawRays (ref rays, ref currRayDirection);
-
-		// Check rays for collisions
-		hits = collisionCheck(ref rays, layerMask);
-	}// end of Update
 }// end of class
