@@ -175,7 +175,7 @@ public class NeuralNetwork : MonoBehaviour
 		//Debug.Log (targetCases);
 		// convert input ArrayLists to Matrices
 		float[] temp_targets = (float[])targetCases.ToArray (typeof(float));
-		print (numTestCases);
+		//print (numTestCases);
 		LA.Matrix<float> targets = LA.Matrix<float>.Build.Dense(numTestCases, numOutputs, temp_targets);
 
 		float[] temp_inputs = (float[])inputCases.ToArray (typeof(float));
@@ -221,6 +221,7 @@ public class NeuralNetwork : MonoBehaviour
 			// Compute new Cost
 			current_cost = CostFunction(targets, actual);
 		}
-		Debug.Log(current_cost);
+		Debug.Log (numInputs);
+		Debug.Log (current_cost);
 	}
 }

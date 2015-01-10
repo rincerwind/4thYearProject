@@ -21,16 +21,17 @@ public class NetworkController : MonoBehaviour {
 		sensor = gameObject.transform.GetChild(0).gameObject.GetComponent<RadialGridSensor> ();
 	}
 
-	private void recordSensorData(ref NeuralNetwork net, ArrayList hits,
+	// !!!!!!!!!!! Note - try minimizing the angle between the target and the current rotation !!!!!!!!!!!!!!!!!!!!!!!!
+	private void recordSensorData(ref NeuralNetwork net, ArrayList hits, float rotation,
 	                              float horizontalMovement, float verticalMovement, 
 	                              Vector3 curr_rotation){
 		if (target == null)
 			target = GameObject.FindGameObjectWithTag("Goal");
 		float deltaX = target.transform.position.x - transform.position.x;
 		float deltaZ = target.transform.position.z - transform.position.z;
+		net.numInputs = 2 + 3 + hits.Count;
 		
-		net.allOutputs.Add(horizontalMovement);
-		net.allOutputs.Add (verticalMovement);
+		net.allOutputs.Add(rotation);
 
 		net.allInputs.Add (deltaX);
 		net.allInputs.Add (deltaZ);
@@ -110,10 +111,10 @@ public class NetworkController : MonoBehaviour {
 
 		// Handle manual rotation
 		if ( Input.GetKey("c") )
-			amount = -1 * Time.deltaTime * sm.rotateSpeed;
+			amount = -1;
 		
 		if ( Input.GetKey("v") )
-			amount = 1 * Time.deltaTime * sm.rotateSpeed;
+			amount = 1;
 
 		// Handle direction recording
 		if ( recordMovement && !TrainingPhase && (direction.x != 0f || direction.z != 0f) )
@@ -121,7 +122,7 @@ public class NetworkController : MonoBehaviour {
 
 		// Handle sensor data recording
 		if ( recordMovement && !TrainingPhase && (direction.x != 0f || direction.z != 0f || amount != 0f) )
-			recordSensorData(ref nets[1], hits,
+			recordSensorData(ref nets[1], hits, amount,
 			                 horizontalMovement, verticalMovement, 
 			                 rotation);
 
@@ -135,7 +136,7 @@ public class NetworkController : MonoBehaviour {
 			amount = GetNewRotation(nets[1], hits, rotation);
 		}
 
-		sm.rotate(amount);
+		sm.rotate(amount * Time.deltaTime * sm.rotateSpeed);
 		sm.move(direction);
 	}
 }
