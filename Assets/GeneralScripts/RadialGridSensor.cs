@@ -72,10 +72,10 @@ public class RadialGridSensor : MonoBehaviour {
 			
 			if( Physics.Raycast( curr, out hitInfo, radius, layerMask ) ){
 				Debug.DrawRay( curr.origin, curr.direction * hitInfo.distance, Color.red );
-				hits.Add (1);
+				hits.Add (hitInfo.distance);
 			}
 			else
-				hits.Add (0);
+				hits.Add (0f);
 		}
 		return hits;
 	}
