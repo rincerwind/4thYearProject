@@ -1,11 +1,10 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workspace />
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Objects\Agent\NetworkController.cs">
     <Files>
-      <File FileName="4thYearProject.sln" Line="1" Column="1" />
-      <File FileName="Assets\Objects\Agent\NetworkController.cs" Line="147" Column="3" />
+      <File FileName="Assets\Objects\Agent\NetworkController.cs" Line="143" Column="23" />
+      <File FileName="Assets\GeneralScripts\RadialGridSensor.cs" Line="76" Column="19" />
       <File FileName="Assets\GeneralScripts\SupervisedMotion.cs" Line="1" Column="1" />
-      <File FileName="Assets\GeneralScripts\RadialGridSensor.cs" Line="1" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

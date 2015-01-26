@@ -61,7 +61,7 @@ public class NetworkController : MonoBehaviour {
 		net.allOutputs.Add(rotation);
 
 		net.allInputs.Add(angleDiff);
-		net.allInputs.Add(sensorData);
+		//net.allInputs.Add(sensorData);
 		//net.allInputs.AddRange(hits);
 	}
 
@@ -75,7 +75,7 @@ public class NetworkController : MonoBehaviour {
 		float deltaZ = target.transform.position.z - transform.position.z;
 			
 		//net.allOutputs.Add(horizontalMovement);
-		net.allOutputs.Add (verticalMovement);
+		net.allOutputs.Add ((rotAmount > 0f)? 0 : verticalMovement);
 		//net.allInputs.Add (deltaX);
 		net.allInputs.Add (deltaZ);
 		net.allInputs.Add (rotAmount);
@@ -120,7 +120,7 @@ public class NetworkController : MonoBehaviour {
 		float angleDiff = vectorDiff(goalDirection, transform.forward); //Vector3.Angle(transform.forward, goalDirection);
 		float[] input_array = new float[net.numInputs];
 		input_array[0] = angleDiff;
-		input_array[1] = sensorData;
+		//input_array[1] = sensorData;
 
 		LA.Matrix<float> inputs = LA.Matrix<float>.Build.Dense (1, net.numInputs, input_array);
 
@@ -152,14 +152,14 @@ public class NetworkController : MonoBehaviour {
 
 		// Handle direction recording
 		if ( recordMovement && !TrainingPhase && (direction.x != 0f || direction.z != 0f) )
-			recordDirection(ref nets[0], horizontalMovement, verticalMovement, (amount > 0f)? 1:0 );
+			recordDirection(ref nets[0], horizontalMovement, verticalMovement, (amount > 0f)? 1f : 0f );
 
 		// Handle rotation data recording
 		if ( recordMovement && !TrainingPhase && (direction.x != 0f || direction.z != 0f || amount != 0f) )
 			recordRotation(ref nets[1], amount/2, sensorData);
 
 		// Handle sensor data recording
-		if ( recordMovement && !TrainingPhase && (direction.x != 0f || direction.z != 0f || amount != 0f) )
+		if ( recordMovement && !TrainingPhase && (amount != 0f) )
 			recordSensorData(ref nets[2], hits, sensorData);
 
 		// Handle Network training
@@ -168,9 +168,11 @@ public class NetworkController : MonoBehaviour {
 
 		// Obtain new direction
 		if ( !debugMovement && !recordMovement && !TrainingPhase ){
-			direction = GetNewDirection(nets[0], (amount > 0f)? 1:0 );
 			sensorData = GetNewSensorData(nets[2], hits);
 			amount = GetNewRotation(nets[1], sensorData) * 2;
+			direction = GetNewDirection(nets[0], (amount > 0f)? 1f : 0f );
+			//if( sensorData != 0f )
+			//	direction.z = 0f;
 		}
 
 		sm.rotate(amount);
