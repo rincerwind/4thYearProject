@@ -57,7 +57,7 @@ public class NetworkController : MonoBehaviour {
 		//print ( vectorDiff(goalDirection, transform.forward) );
 
 		//net.numInputs = 1 + hits.Count;
-		
+		print (rotation);
 		net.allOutputs.Add(rotation);
 
 		net.allInputs.Add(angleDiff);
@@ -65,18 +65,12 @@ public class NetworkController : MonoBehaviour {
 		//net.allInputs.AddRange(hits);
 	}
 
-	private void recordDirection(ref NeuralNetwork net, float horizontalMovement, float verticalMovement, float rotAmount){
-		if (target == null)
-			target = GameObject.FindGameObjectWithTag("Goal");
+	private void recordDirection(ref NeuralNetwork net, float horizontalMovement, float verticalMovement,
+	                             float deltaZ, float rotAmount){
 		if (sensor == null)
 			sensor = gameObject.transform.GetChild(0).gameObject.GetComponent<RadialGridSensor> ();
-
-		//float deltaX = target.transform.position.x - transform.position.x;
-		float deltaZ = target.transform.position.z - transform.position.z;
 			
-		//net.allOutputs.Add(horizontalMovement);
-		net.allOutputs.Add ((rotAmount > 0f)? 0 : verticalMovement);
-		//net.allInputs.Add (deltaX);
+		net.allOutputs.Add (( 1 - Mathf.Abs(rotAmount) ) * verticalMovement);
 		net.allInputs.Add (deltaZ);
 		net.allInputs.Add (rotAmount);
 	}
@@ -87,12 +81,9 @@ public class NetworkController : MonoBehaviour {
 		TrainingPhase = false;
 	}
 
-	private Vector3 GetNewDirection(NeuralNetwork net, float rotAmount){
-		if (target == null)
-			target = GameObject.FindGameObjectWithTag("Goal");
+	private Vector3 GetNewDirection(NeuralNetwork net, float deltaZ, float rotAmount){
 		LA.Matrix<float> inputs = LA.Matrix<float>.Build.Dense (1, net.numInputs, new float[]{
-									//target.transform.position.x - transform.position.x,
-									target.transform.position.z - transform.position.z,
+									deltaZ,
 									rotAmount});
 		LA.Matrix<float> outputs = net.ComputeOutputs(inputs);
 		return new Vector3(0, 0, outputs[0,0]);
@@ -118,6 +109,7 @@ public class NetworkController : MonoBehaviour {
 
 		Vector3 goalDirection = target.transform.position - transform.position;
 		float angleDiff = vectorDiff(goalDirection, transform.forward); //Vector3.Angle(transform.forward, goalDirection);
+
 		float[] input_array = new float[net.numInputs];
 		input_array[0] = angleDiff;
 		//input_array[1] = sensorData;
@@ -132,8 +124,9 @@ public class NetworkController : MonoBehaviour {
 	void FixedUpdate () {
 		float verticalMovement = Input.GetAxis ("Vertical");
 		float horizontalMovement = Input.GetAxis ("Horizontal");
-		float amount = 0f;
+		float rotAmount = 0f;
 		float sensorData = 0f;
+		float deltaZ = 0f;
 		Vector3 direction = new Vector3 (0, 0, verticalMovement);
 		ArrayList hits = sensor.collisionCheck();
 
@@ -143,7 +136,8 @@ public class NetworkController : MonoBehaviour {
 		if( recordMovement )
 			Debug.DrawLine(transform.position, target.transform.position);
 
-		amount = horizontalMovement * Time.deltaTime * sm.rotateSpeed;
+		deltaZ = target.transform.position.z - transform.position.z;
+		rotAmount = horizontalMovement;
 
 		if( horizontalMovement > 0 )
 			sensorData = 1;
@@ -152,15 +146,15 @@ public class NetworkController : MonoBehaviour {
 
 		// Handle direction recording
 		if ( recordMovement && !TrainingPhase && (direction.x != 0f || direction.z != 0f) )
-			recordDirection(ref nets[0], horizontalMovement, verticalMovement, (amount > 0f)? 1f : 0f );
+			recordDirection(ref nets[0], horizontalMovement, verticalMovement, deltaZ, (rotAmount > 0f)? 1f : 0f );
 
 		// Handle rotation data recording
-		if ( recordMovement && !TrainingPhase && (direction.x != 0f || direction.z != 0f || amount != 0f) )
-			recordRotation(ref nets[1], amount/2, sensorData);
+		if ( recordMovement && !TrainingPhase && (direction.x != 0f || direction.z != 0f || rotAmount != 0f) )
+			recordRotation(ref nets[1], rotAmount, sensorData);
 
 		// Handle sensor data recording
-		if ( recordMovement && !TrainingPhase && (amount != 0f) )
-			recordSensorData(ref nets[2], hits, sensorData);
+		//if ( recordMovement && !TrainingPhase && (amount != 0f) )
+		//	recordSensorData(ref nets[2], hits, sensorData);
 
 		// Handle Network training
 		if ( !recordMovement && TrainingPhase )
@@ -168,14 +162,13 @@ public class NetworkController : MonoBehaviour {
 
 		// Obtain new direction
 		if ( !debugMovement && !recordMovement && !TrainingPhase ){
-			sensorData = GetNewSensorData(nets[2], hits);
-			amount = GetNewRotation(nets[1], sensorData) * 2;
-			direction = GetNewDirection(nets[0], (amount > 0f)? 1f : 0f );
-			//if( sensorData != 0f )
-			//	direction.z = 0f;
+			//sensorData = GetNewSensorData(nets[2], hits);
+			rotAmount = GetNewRotation(nets[1], 1f);
+			print (rotAmount);
+			direction = GetNewDirection(nets[0], deltaZ, rotAmount );
 		}
 
-		sm.rotate(amount);
+		sm.rotate(rotAmount * Time.deltaTime * sm.rotateSpeed);
 		sm.move(direction);
 	}
 }
