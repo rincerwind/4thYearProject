@@ -12,9 +12,6 @@ public class WorldManager : MonoBehaviour {
 	void Start(){
 		DontDestroyOnLoad(gameObject);
 		agent = GameObject.FindWithTag("Player");
-		/*NeuralNetwork[] nets = GetComponents<NeuralNetwork>();
-		foreach (NeuralNetwork n in nets)
-			DontDestroyOnLoad(n);*/
 		DontDestroyOnLoad(agent);
 
 		GameObject sensor = GameObject.FindWithTag("Sensor");
@@ -26,16 +23,23 @@ public class WorldManager : MonoBehaviour {
 		if( currentLevel < lastLevel ){
 			currentLevel ++;
 			Application.LoadLevel(currentLevel);
-			respawn = GameObject.FindWithTag("Respawn");
-			agent.transform.position = respawn.transform.position;
-
-			if( currentLevel == lastLevel ){
-				NetworkController n = agent.GetComponent<NetworkController>();
-				n.recordMovement 	= false;
-				n.TrainingPhase		= true;
-			}
 		}
 		else
 			print ("You Win!");
+	}
+
+	private void OnLevelWasLoaded( int level ){
+		respawn = GameObject.FindWithTag("Respawn");
+		if( respawn != null )
+			agent.transform.position = respawn.transform.position;
+
+		SupervisedMotion sm = agent.GetComponent<SupervisedMotion>();
+		sm.Start();
+
+		if( currentLevel == lastLevel ){
+			NetworkController n = agent.GetComponent<NetworkController>();
+			n.recordMovement 	= false;
+			n.TrainingPhase		= true;
+		}
 	}
 }

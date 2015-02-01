@@ -43,7 +43,7 @@ public class RadialGridSensor : MonoBehaviour {
 		ArrayList rays = new ArrayList();
 		ArrayList hits = new ArrayList();
 
-		// collide with everything that is not a Player
+		// collide with everything that is NOT a Player or Goal
 		int layerMask = ~(1<<LayerMask.NameToLayer("Player") | 1<<LayerMask.NameToLayer("Goal"));
 		
 		// Init some variables
