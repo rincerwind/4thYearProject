@@ -7,11 +7,12 @@ public class FollowPlayer : MonoBehaviour {
 	public Camera followCamera;
 	
 	void Start(){
-		if (followCamera == null)
-			followCamera = Camera.main;
+		followCamera = Camera.main;
 	}
 	
 	void Update(){
+		if (followCamera == null)
+			followCamera = Camera.main;
 		followCamera.transform.position = transform.position + cameraFollowOffset;
 	}
 }

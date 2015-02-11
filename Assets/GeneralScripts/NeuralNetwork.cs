@@ -7,7 +7,6 @@ using DBL = MathNet.Numerics.LinearAlgebra.Double;
 public class NeuralNetwork : MonoBehaviour
 {
 	// ------------------------------------ Properties ------------------------------------
-	public bool TrainingPhase;
 	public int numIterations;
 	public int numInputs;
 	public int numHidden;
@@ -16,8 +15,11 @@ public class NeuralNetwork : MonoBehaviour
 	public float allowedError;
 	public float learningRate;
 	public float momentum;
-	private int numTestCases;
+	public ArrayList allOutputs;
+	public ArrayList allInputs;
+	public int stepFunction = 0; // 0 - hyper tan, 1 - sigmoid, 2 - binary
 
+	private int numTestCases;
 	private LA.Matrix<float> inputs;
 	private LA.Matrix<float> ihWeights;
 	private LA.Matrix<float> ihBiases;
@@ -33,6 +35,8 @@ public class NeuralNetwork : MonoBehaviour
 		hoWeights = LA.Matrix<float>.Build.Random (numHidden, numOutputs);
 		ihBiases = LA.Matrix<float>.Build.Random (1, numHidden);
 		hoBiases = LA.Matrix<float>.Build.Random (1, numOutputs);
+		allOutputs = new ArrayList ();
+		allInputs = new ArrayList ();
 	}
 
 	// ------------------------------------ Getters ------------------------------------
@@ -43,7 +47,6 @@ public class NeuralNetwork : MonoBehaviour
 	public LA.Matrix<float> GetHiddenWeights(){
 		return ihWeights;
 	}
-
 
 	// ------------------------------------ Methods ------------------------------------
 	private float sigmoid (float x)
@@ -64,6 +67,13 @@ public class NeuralNetwork : MonoBehaviour
 					return 1.0f;
 			else
 					return (float)Trig.Tanh (x);
+	}
+
+	private float binaryFunction(float x){
+		if( x > 0f )
+			return 1f;
+		else
+			return 0f;
 	}
 
 	private float sampleMean(LA.Vector<float> sample){
@@ -132,8 +142,14 @@ public class NeuralNetwork : MonoBehaviour
 		hoSums = ihOutputs.Multiply(hoWeights);
 		outputs = hoSums.Add (hoBiases);
 
-		for (int i = 0; i < numOutputs; i++)
-			outputs [0, i] = hyperTan(outputs [0, i]);
+		for (int i = 0; i < numOutputs; i++){
+			if( stepFunction == 0 )
+				outputs [0, i] = hyperTan(outputs [0, i]);
+			else if ( stepFunction == 1 )
+				outputs [0, i] = sigmoid(outputs [0, i]);
+			else
+				outputs [0, i] = binaryFunction(outputs [0, i]);
+		}
 
 		return outputs;
 	}
@@ -173,7 +189,7 @@ public class NeuralNetwork : MonoBehaviour
 		//Debug.Log (targetCases);
 		// convert input ArrayLists to Matrices
 		float[] temp_targets = (float[])targetCases.ToArray (typeof(float));
-
+		//print (numTestCases);
 		LA.Matrix<float> targets = LA.Matrix<float>.Build.Dense(numTestCases, numOutputs, temp_targets);
 
 		float[] temp_inputs = (float[])inputCases.ToArray (typeof(float));
@@ -219,14 +235,7 @@ public class NeuralNetwork : MonoBehaviour
 			// Compute new Cost
 			current_cost = CostFunction(targets, actual);
 		}
-		Debug.Log(current_cost);
+		Debug.Log (numInputs);
+		Debug.Log (current_cost);
 	}
-
-	// Use this for initialization
-	/*
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}*/
 }

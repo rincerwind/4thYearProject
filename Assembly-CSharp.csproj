@@ -49,9 +49,10 @@
      <Compile Include="Assets\GeneralScripts\CameraZoom.cs" />
      <Compile Include="Assets\GeneralScripts\NeuralNetwork.cs" />
      <Compile Include="Assets\GeneralScripts\RadialGridSensor.cs" />
-     <Compile Include="Assets\GeneralScripts\SupervisedMovement.cs" />
+     <Compile Include="Assets\GeneralScripts\SupervisedMotion.cs" />
      <Compile Include="Assets\GeneralScripts\WorldManager.cs" />
      <Compile Include="Assets\Objects\Agent\FollowPlayer.cs" />
+     <Compile Include="Assets\Objects\Agent\NetworkController.cs" />
      <Compile Include="Assets\Objects\FogOfWar\FogOfWarPlayer.cs" />
      <Compile Include="Assets\Objects\Goal\NextGoal.cs" />
      <None Include="Assets\GeneralScripts\MathNet3.5\System.Threading.xml" />

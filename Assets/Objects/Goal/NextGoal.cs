@@ -9,6 +9,8 @@ public class NextGoal : MonoBehaviour {
 		transform.position = goalPoints[0].position;
 	}
 
+	public int getCurrentPos(){ return currentGoal; }
+
 	public Transform getCurrentGoal(){
 		return goalPoints[currentGoal];
 	}
