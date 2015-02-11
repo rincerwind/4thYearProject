@@ -39,7 +39,7 @@ public class SupervisedMotion : MonoBehaviour {
 	// On level 5, test going towards a goal and avoiding a mixed-size objects
 	public void OnTriggerEnter(Collider c){
 		switch (WorldManager.currentLevel){
-			case 0: case 1: case 2:
+			case 0: case 1:
 				if( c.transform.tag == "Goal" ){
 					if( g == null || ( g != null && g.isLastGoal() ) )
 						WorldManager.CompleteLevel();

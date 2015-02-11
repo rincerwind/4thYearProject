@@ -17,9 +17,9 @@ public class NeuralNetwork : MonoBehaviour
 	public float momentum;
 	public ArrayList allOutputs;
 	public ArrayList allInputs;
+	public int stepFunction = 0; // 0 - hyper tan, 1 - sigmoid, 2 - binary
 
 	private int numTestCases;
-	private bool useHyperTan = true;
 	private LA.Matrix<float> inputs;
 	private LA.Matrix<float> ihWeights;
 	private LA.Matrix<float> ihBiases;
@@ -38,8 +38,6 @@ public class NeuralNetwork : MonoBehaviour
 		allOutputs = new ArrayList ();
 		allInputs = new ArrayList ();
 	}
-
-	public void setToHyperTan( bool isHyperTan ){ useHyperTan = isHyperTan; }
 
 	// ------------------------------------ Getters ------------------------------------
 	public LA.Matrix<float> GetOutputWeights(){
@@ -69,6 +67,13 @@ public class NeuralNetwork : MonoBehaviour
 					return 1.0f;
 			else
 					return (float)Trig.Tanh (x);
+	}
+
+	private float binaryFunction(float x){
+		if( x > 0f )
+			return 1f;
+		else
+			return 0f;
 	}
 
 	private float sampleMean(LA.Vector<float> sample){
@@ -138,10 +143,12 @@ public class NeuralNetwork : MonoBehaviour
 		outputs = hoSums.Add (hoBiases);
 
 		for (int i = 0; i < numOutputs; i++){
-			if( useHyperTan == true )
+			if( stepFunction == 0 )
 				outputs [0, i] = hyperTan(outputs [0, i]);
-			else
+			else if ( stepFunction == 1 )
 				outputs [0, i] = sigmoid(outputs [0, i]);
+			else
+				outputs [0, i] = binaryFunction(outputs [0, i]);
 		}
 
 		return outputs;
