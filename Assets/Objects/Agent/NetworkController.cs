@@ -46,31 +46,9 @@ public class NetworkController : MonoBehaviour {
 	private void recordSensorData(ref NeuralNetwork net, ArrayList hits, float rotation){
 		net.allInputs.AddRange(hits);
 
-		if( (float)hits[2] == 1 && (float)hits[1] == 1 && (float)hits[0] == 0 ){
-			net.allOutputs.Add( 0f );
-			net.allOutputs.Add( 0f );
-			net.allOutputs.Add( 1f );
-		}
-		else if( (float)hits[2] == 0 && (float)hits[1] == 1 && (float)hits[0] == 1 ){
-			net.allOutputs.Add( 1f );
-			net.allOutputs.Add( 0f );
-			net.allOutputs.Add( 0f );
-		}
-		else if( (float)hits[2] == 1 && (float)hits[1] == 0 && (float)hits[0] == 0 ){
-			net.allOutputs.Add( 0f );
-			net.allOutputs.Add( 0f );
-			net.allOutputs.Add( 1f );
-		}
-		else if( (float)hits[2] == 0 && (float)hits[1] == 0 && (float)hits[0] == 1 ){
-			net.allOutputs.Add( 1f );
-			net.allOutputs.Add( 0f );
-			net.allOutputs.Add( 0f );
-		}
-		else{
-			net.allOutputs.Add( 0f );
-			net.allOutputs.Add( 0f );
-			net.allOutputs.Add( 0f );
-		}
+		net.allOutputs.Add (hits[0]);
+		net.allOutputs.Add (hits[1]);
+		net.allOutputs.Add (hits[2]);
 	}
 
 	private void recordRotation(ref NeuralNetwork net, float rotation, float angleDiff){
@@ -98,10 +76,9 @@ public class NetworkController : MonoBehaviour {
 	}
 
 	private void trainNetworks(){
-		float[,] sensorTrain = { {0f,0f,0f}, {0f,0f,1f}, {0f,1f,0f}, {0f,1f,1f},
-								 {1f,0f,0f}, {1f,0f,1f}, {1f,1f,0f}, {1f,1f,1f}};
+		float[,] sensorTrain = { {0f,0f,1f}, {0f,1f,0f}, {1f,0f,0f}};
 
-		for(int i = 0; i < 8; i++){
+		for(int i = 0; i < 3; i++){
 			ArrayList hits = new ArrayList();
 			hits.Add(sensorTrain[i,0]);
 			hits.Add(sensorTrain[i,1]);

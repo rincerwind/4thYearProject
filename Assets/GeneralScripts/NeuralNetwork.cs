@@ -18,15 +18,21 @@ public class NeuralNetwork : MonoBehaviour
 	public ArrayList allOutputs;
 	public ArrayList allInputs;
 	public int stepFunction = 0; // 0 - hyper tan, 1 - sigmoid, 2 - binary
+	public bool LinearRegression = true;
 
 	private int numTestCases;
 	private LA.Matrix<float> inputs;
 	private LA.Matrix<float> ihWeights;
 	private LA.Matrix<float> ihBiases;
 	private LA.Matrix<float> ihOutputs;
+
 	private LA.Matrix<float> hoWeights;
 	private LA.Matrix<float> hoBiases;
 	private LA.Matrix<float> outputs;	// holds the current output of the Net
+
+	private ArrayList w_weights;
+	private ArrayList w_biases;
+	private ArrayList w_outputs;
 
 	// ------------------------------------ Initialization ------------------------------------
 	void Start ()
@@ -37,6 +43,20 @@ public class NeuralNetwork : MonoBehaviour
 		hoBiases = LA.Matrix<float>.Build.Random (1, numOutputs);
 		allOutputs = new ArrayList ();
 		allInputs = new ArrayList ();
+		w_weights = new ArrayList();
+		w_biases = new ArrayList();
+		w_outputs = new ArrayList();
+	
+		/*w_weights.Add ( LA.Matrix<float>.Build.Random (numInputs, numHidden) );
+		w_biases.Add ( LA.Matrix<float>.Build.Random (1, numHidden) );
+
+		for(int i = 1; i < numHiddenLayers; i++){
+			w_weights.Add ( LA.Matrix<float>.Build.Random (numHidden, numHidden) );
+			w_biases.Add ( LA.Matrix<float>.Build.Random (1, numHidden) );
+		}
+
+		w_weights.Add ( LA.Matrix<float>.Build.Random (numHidden, numOutputs) );
+		w_biases.Add ( LA.Matrix<float>.Build.Random (1, numOutputs) );*/
 	}
 
 	// ------------------------------------ Getters ------------------------------------
@@ -48,7 +68,7 @@ public class NeuralNetwork : MonoBehaviour
 		return ihWeights;
 	}
 
-	// ------------------------------------ Methods ------------------------------------
+	// ------------------------------------ Step Functions ------------------------------------
 	private float sigmoid (float x)
 	{
 			if (x < -45.0f)
@@ -57,6 +77,12 @@ public class NeuralNetwork : MonoBehaviour
 					return 1.0f;
 			else
 					return 1 / (1 + Mathf.Exp(-x));
+	}
+
+	private void sigmoidOnMatrix (LA.Matrix<float> x, int len)
+	{
+		for (int i = 0; i < len; i++)
+			x[0, i] = sigmoid(x[0, i]);
 	}
 
 	private float hyperTan (float x)
@@ -69,6 +95,12 @@ public class NeuralNetwork : MonoBehaviour
 					return (float)Trig.Tanh (x);
 	}
 
+	private void hyperTanOnMatrix (LA.Matrix<float> x, int len)
+	{
+		for (int i = 0; i < len; i++)
+			x[0, i] = hyperTan(x[0, i]);
+	}
+
 	private float binaryFunction(float x){
 		if( x > 0f )
 			return 1f;
@@ -76,6 +108,13 @@ public class NeuralNetwork : MonoBehaviour
 			return 0f;
 	}
 
+	private void binaryFunctionOnMatrix (LA.Matrix<float> x, int len)
+	{
+		for (int i = 0; i < len; i++)
+			x[0, i] = binaryFunction(x[0, i]);
+	}
+
+	// ------------------------------------ End Step Functions ------------------------------------
 	private float sampleMean(LA.Vector<float> sample){
 		float mean = 0.0f;
 
@@ -110,20 +149,42 @@ public class NeuralNetwork : MonoBehaviour
 		}
 	}
 
+	// ---------------------------- Cost Functions ----------------------------
+
 	public float CostFunction(LA.Matrix<float> targets, LA.Matrix<float> actual){
-		LA.Matrix<float> predicted;
-		LA.Vector<float> columnSums;
+		if( LinearRegression == true )
+			return LinearCostFunction(targets, actual);
 
-		predicted = actual.Subtract (targets);
-		predicted = predicted.PointwisePower (2);
-		predicted = predicted.Divide ((float)(2*numTestCases));
+		return LogisticCostFunction(targets,actual);
+	}
 
-		columnSums = predicted.RowSums();
-
+	private float LinearCostFunction(LA.Matrix<float> targets, LA.Matrix<float> actual){
+		LA.Matrix<float> err;
 		float cost = 0.0f;
-		for (int i = 0; i < numTestCases; i++)
-						cost += columnSums [i];
 
+		err = actual.Subtract (targets);
+		err = err.PointwisePower (2);
+
+		for (int i = 0; i < numOutputs; i++)
+			cost += err [0,i];
+		return cost;
+	}
+
+	private float LogisticCostFunction(LA.Matrix<float> targets, LA.Matrix<float> actual){
+		LA.Matrix<float> err;
+		LA.Matrix<float> pos;
+		LA.Matrix<float> neg;
+		float cost = 0.0f;
+
+		pos = targets.PointwiseMultiply(actual.PointwiseLog());
+		neg = targets.Negate().Add(1);
+		neg = neg.PointwiseMultiply((actual.Negate().Add(1)).PointwiseLog());
+
+		err = pos.Add(neg);
+
+		for (int i = 0; i < numOutputs; i++)
+			cost += err [0,i];
+		
 		return cost;
 	}
 
@@ -143,15 +204,39 @@ public class NeuralNetwork : MonoBehaviour
 		outputs = hoSums.Add (hoBiases);
 
 		for (int i = 0; i < numOutputs; i++){
-			if( stepFunction == 0 )
+			if( LinearRegression == true )
 				outputs [0, i] = hyperTan(outputs [0, i]);
-			else if ( stepFunction == 1 )
-				outputs [0, i] = sigmoid(outputs [0, i]);
 			else
-				outputs [0, i] = binaryFunction(outputs [0, i]);
+				outputs [0, i] = sigmoid(outputs [0, i]);
 		}
 
 		return outputs;
+	}
+
+	public LA.Matrix<float> ComputeOutputs2(LA.Matrix<float> newInputs){
+		LA.Matrix<float> sums;
+		inputs = newInputs;
+
+		sums = inputs.Multiply ((LA.Matrix<float>)w_weights[0]);
+		w_outputs.Add( sums.Add ((LA.Matrix<float>)w_biases[0]) );
+		sigmoidOnMatrix((LA.Matrix<float>)w_outputs[0], numHidden);
+
+		int i = 1;
+		for( i = 1; i < w_weights.Count - 1; i++ ){
+			sums = ((LA.Matrix<float>)w_outputs[i-1]).Multiply ((LA.Matrix<float>)w_weights[i]);
+			w_outputs.Add( sums.Add ((LA.Matrix<float>)w_biases[i]) );
+			sigmoidOnMatrix((LA.Matrix<float>)w_outputs[i], numHidden);
+		}
+
+		sums = ((LA.Matrix<float>)w_outputs[i-1]).Multiply ((LA.Matrix<float>)w_weights[i]);
+		w_outputs.Add( sums.Add ((LA.Matrix<float>)w_biases[i]) );
+
+		if( LinearRegression == true )
+			hyperTanOnMatrix((LA.Matrix<float>)w_outputs[i], numOutputs);
+		else
+			sigmoidOnMatrix((LA.Matrix<float>)w_outputs[i], numOutputs);
+		
+		return (LA.Matrix<float>)w_outputs[i];
 	}
 
 	// ---------------------------- Back-Propagation Part----------------------------
@@ -163,9 +248,16 @@ public class NeuralNetwork : MonoBehaviour
 		ArrayList deltas = new ArrayList();
 
 		// Compute output gradient
-		LA.Matrix<float> hyperTanDerivative = (outputs.Negate()).Add(1);
-		hyperTanDerivative = hyperTanDerivative.PointwiseMultiply (outputs.Add (1));
-		oGrads = (targetOutputs.Subtract (outputs)).PointwiseMultiply(hyperTanDerivative);
+		if( LinearRegression == true ){
+			LA.Matrix<float> hyperTanDerivative = (outputs.Negate()).Add(1);
+			hyperTanDerivative = hyperTanDerivative.PointwiseMultiply (outputs.Add (1));
+			oGrads = (targetOutputs.Subtract (outputs)).PointwiseMultiply(hyperTanDerivative);
+		}
+		else{
+			LA.Matrix<float> sigD = (outputs.Negate ()).Add (1);
+			sigD = outputs.PointwiseMultiply (sigD);
+			oGrads = (targetOutputs.Subtract (outputs)).PointwiseMultiply(sigD);
+		}
 
 		// Compute hidden gradient
 		LA.Matrix<float> grads_weights_sums = hoWeights.TransposeAndMultiply (oGrads);
@@ -185,26 +277,24 @@ public class NeuralNetwork : MonoBehaviour
 	}
 
 	public void LearningPhase(ArrayList inputCases, ArrayList targetCases, float target_cost){
+		float current_cost = 1000f;
 		numTestCases = targetCases.Count / numOutputs;
-		//Debug.Log (targetCases);
+
 		// convert input ArrayLists to Matrices
 		float[] temp_targets = (float[])targetCases.ToArray (typeof(float));
-		//print (numTestCases);
 		LA.Matrix<float> targets = LA.Matrix<float>.Build.Dense(numTestCases, numOutputs, temp_targets);
 
 		float[] temp_inputs = (float[])inputCases.ToArray (typeof(float));
 		LA.Matrix<float> inputs = LA.Matrix<float>.Build.Dense(numTestCases, numInputs, temp_inputs);
 		//Normalization (inputs);
 
-		LA.Matrix<float> actual = LA.Matrix<float>.Build.Dense (numTestCases, numOutputs, 0);
-		float current_cost = CostFunction (targets, actual);
-
 		ArrayList deltas; // store hidden/output layer bias deltas and weights deltas
 
 		LA.Matrix<float> currInput;
 		LA.Matrix<float> currTarget;
 
-		for(int i = 1; i <= numIterations && current_cost > target_cost; i++){
+		int i;
+		for(i = 1; i <= numIterations && current_cost > target_cost; i++){
 			// Acumulate deltas (Needed for weight updates)
 			// Given in the same order by UpdateWeights
 			LA.Matrix<float> deltaOutputBias = LA.Matrix<float>.Build.Dense (1, numOutputs, 0);
@@ -213,18 +303,21 @@ public class NeuralNetwork : MonoBehaviour
 			LA.Matrix<float> deltaHiddenBias = LA.Matrix<float>.Build.Dense (1, numHidden, 0);
 			LA.Matrix<float> deltaHidden = LA.Matrix<float>.Build.Dense (numInputs, numHidden, 0);
 
+			current_cost = 0f;
+
 			for (int m = 0; m < numTestCases; m++) {
 				currInput = (inputs.Row(m)).ToRowMatrix();
 				currTarget = (targets.Row(m)).ToRowMatrix();
 				outputs = ComputeOutputs(currInput);
 
-				actual.SetRow(m, outputs.Row(0));
 				deltas = ComputeDeltas(currTarget, learningRate, momentum);
 
 				deltaOutputBias = deltaOutputBias.Add((LA.Matrix<float>)deltas[0]);
 				deltaOutput = deltaOutput.Add((LA.Matrix<float>)deltas[1]);
 				deltaHiddenBias = deltaHiddenBias.Add((LA.Matrix<float>)deltas[2]);
 				deltaHidden = deltaHidden.Add((LA.Matrix<float>)deltas[3]);
+
+				current_cost += CostFunction(currTarget, outputs);
 			}
 			// UpdateWeights
 			hoBiases = hoBiases.Add (deltaOutputBias.Divide(numTestCases));
@@ -233,9 +326,10 @@ public class NeuralNetwork : MonoBehaviour
 			ihWeights = ihWeights.Add (deltaHidden.Divide(numTestCases));
 
 			// Compute new Cost
-			current_cost = CostFunction(targets, actual);
+			current_cost /= (LinearRegression == true)? 2*numTestCases : -numTestCases;
 		}
 		Debug.Log (numInputs);
+		Debug.Log (i);
 		Debug.Log (current_cost);
 	}
 }
