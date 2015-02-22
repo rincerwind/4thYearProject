@@ -43,48 +43,68 @@ public class NetworkController : MonoBehaviour {
 		return finalAngle;
 	}
 
-	private void recordSensorData(ref NeuralNetwork net, ArrayList hits, float rotation){
+	private void recordSensorData(ref NeuralNetwork net, ArrayList hits){
+		float[] rotType = {0f,0f,0f};
+		int mid = (hits.Count)/2;
+		int left_count, right_count;
+		left_count = right_count = 0;
+
+		for(int i = 0; i < mid; i++)
+			if( (float)hits[i] > 0f )
+				left_count++;
+
+		for(int i = mid + 1; i < hits.Count; i++)
+			if( (float)hits[i] > 0f )
+				right_count++;
+
 		net.allInputs.AddRange(hits);
 
-		net.allOutputs.Add (hits[0]);
-		net.allOutputs.Add (hits[1]);
-		net.allOutputs.Add (hits[2]);
+		if( left_count < right_count )
+			rotType[0] = 1f;
+		else if( left_count > right_count )
+			rotType[2] = 1f;
+		else if( (float)hits[mid] == 1f )
+			rotType[1] = 1f;
+
+		net.allOutputs.Add(rotType[0]);
+		net.allOutputs.Add(rotType[1]);
+		net.allOutputs.Add(rotType[2]);
 	}
 
 	private void recordRotation(ref NeuralNetwork net, float rotation, float angleDiff){
 		if (target == null)
 			target = GameObject.FindGameObjectWithTag("Goal");
 
-		//net.numInputs = 1 + hits.Count;
-		//print (rotation);
 		net.allOutputs.Add(rotation);
-
 		net.allInputs.Add(angleDiff);
-		//net.allInputs.AddRange(hits);
 	}
 
 	private void recordDirection(ref NeuralNetwork net, float verticalMovement,
-	                             float deltaZ, float angleDiff){
+	                             float deltaZ){
 		if (sensor == null)
 			sensor = gameObject.transform.GetChild(0).gameObject.GetComponent<RadialGridSensor> ();
 
-		//print (( 1 - (Mathf.Abs(angleDiff)/180) ) * verticalMovement);
-
-		net.allOutputs.Add (/*( 1 - (angleDiff/180) ) **/ verticalMovement);
+		net.allOutputs.Add (verticalMovement);
 		net.allInputs.Add (deltaZ);
-		//net.allInputs.Add (angleDiff);
 	}
 
 	private void trainNetworks(){
-		float[,] sensorTrain = { {0f,0f,1f}, {0f,1f,0f}, {1f,0f,0f}};
+		float[,] sensorTrain = { {0f,0f,0f,1f,1f}, //{0f,0f,0f,1f,0f},
+			//{0f,1f,1f,1f,0f}, 
+			{0f,0f,1f,0f,0f}, 
+			{1f,1f,0f,0f,0f}, //{0f,1f,0f,0f,1f}, 
+		//	{0f,0f,0f,0f,0f} 
+		};
 
 		for(int i = 0; i < 3; i++){
 			ArrayList hits = new ArrayList();
 			hits.Add(sensorTrain[i,0]);
 			hits.Add(sensorTrain[i,1]);
 			hits.Add(sensorTrain[i,2]);
+			hits.Add(sensorTrain[i,3]);
+			hits.Add(sensorTrain[i,4]);
 
-			recordSensorData(ref nets[2], hits, 0f);
+			recordSensorData(ref nets[2], hits);
 		}
 
 		foreach (NeuralNetwork net in nets)
@@ -92,10 +112,9 @@ public class NetworkController : MonoBehaviour {
 		TrainingPhase = false;
 	}
 
-	private Vector3 GetNewDirection(NeuralNetwork net, float deltaZ, float angleDiff){
+	private Vector3 GetNewDirection(NeuralNetwork net, float deltaZ){
 		LA.Matrix<float> inputs = LA.Matrix<float>.Build.Dense (1, net.numInputs, new float[]{
-									deltaZ
-									/*angleDiff*/});
+									deltaZ });
 		LA.Matrix<float> outputs = net.ComputeOutputs(inputs);
 		return new Vector3(0, 0, outputs[0,0]);
 	}
@@ -166,17 +185,17 @@ public class NetworkController : MonoBehaviour {
 		// Handle direction recording
 		if ( WorldManager.currentLevel == 0 && recordMovement 
 		    && !TrainingPhase && (direction.z != 0f || rotAmount != 0f) )
-			recordDirection(ref nets[0], verticalMovement, deltaZ, Mathf.Abs(angleDiff) );
-
-		// Handle sensor data recording
-		//if ( recordMovement 
-		//    && !TrainingPhase && (direction.z != 0f || rotAmount != 0f) )
-		//	recordSensorData(ref nets[2], hits, rotAmount);
+			recordDirection(ref nets[0], verticalMovement, deltaZ );
 
 		// Handle rotation data recording
 		if ( WorldManager.currentLevel == 1 &&  recordMovement 
 		    && !TrainingPhase && (direction.z != 0f || rotAmount != 0f) )
 			recordRotation(ref nets[1], rotAmount, angleDiff);
+
+		// Handle sensor data recording
+		/*if ( WorldManager.currentLevel == 2 && recordMovement 
+		    && !TrainingPhase && (direction.z != 0f || rotAmount != 0f) )
+			recordSensorData(ref nets[2], hits);*/
 
 		// Handle Network training
 		if ( !recordMovement && TrainingPhase )
@@ -185,31 +204,62 @@ public class NetworkController : MonoBehaviour {
 		// Controller
 		if ( !debugMovement && !recordMovement && !TrainingPhase ){
 			float[] rot_prob = GetNewSensorData(nets[2], hits);
-
-			if ( (float)hits[1] != 1 
+			int min_pos = 1;
+			/*if ( (float)rot_prob[1] <= 0.5 
 			    && ((Mathf.Abs(angleDiff) < 165 && Mathf.Abs (angleDiff) > 15f) || deltaZ > 15f )
-			    && ( (float)hits[0] == 1 || (float)hits[2] == 1 ) )
-				rotAmount = 0;
-			else if ( (float)hits[1] == 1 && (float)hits[0] == 1 )
-				rotAmount = -1;
-			else if ( (float)hits[1] == 1 && (float)hits[2] == 1 )
+			    && ( (float)rot_prob[0] > 0.5 || (float)rot_prob[2] > 0.5 ) )
+				rotAmount = 0;*/
+
+			if( rot_prob[0] > rot_prob[1] )
+				min_pos = 1;
+			else
+				min_pos = 0;
+
+			if( rot_prob[min_pos] > rot_prob[2] )
+				min_pos = 2;
+
+			if( min_pos == 0 && ( ((float)rot_prob[1] > 0.5f && (float)rot_prob[2] > 0f)
+			                     || ((float)rot_prob[1] <= 0.5f && (float)rot_prob[1] > 0f 
+			    						&& (float)rot_prob[2] > 0.7) ) )
 				rotAmount = 1;
+			else if( min_pos == 2 && ( ((float)rot_prob[1] > 0.5f && (float)rot_prob[0] > 0f)
+			                          || ((float)rot_prob[1] <= 0.5f && (float)rot_prob[1] > 0f 
+			    							&& (float)rot_prob[0] > 0.7) ) )
+				rotAmount = -1;
 			else
 				rotAmount = GetNewRotation(nets[1], angleDiff);
 
-			//print ( rotAmount );
-			if( (float)hits[1] == 1 ){
-				sm.move(new Vector3(0f,0f,0f));
+			/*if ( ((float)rot_prob[1] > 0.5 && (float)rot_prob[0] > 0.5)
+			    || ((float)rot_prob[1] <= 0.5 && (float)rot_prob[0] > 0.7))
+				rotAmount = -1;
+			else if ( (float)rot_prob[1] > 0.5 && (float)rot_prob[2] > 0.5 
+			         || ((float)rot_prob[1] <= 0.5 && (float)rot_prob[2] > 0.7))
+				rotAmount = 1;
+			else
+				rotAmount = GetNewRotation(nets[1], angleDiff);*/
+
+			/*if( Mathf.Abs(rotAmount) == 1f )
+				direction.z = 0.30f;
+			else if( Mathf.Abs(rotAmount) >= 0.5f && Mathf.Abs(rotAmount) < 1f )
 				direction.z = 0.4f;
+			else
+				direction = GetNewDirection(nets[0], deltaZ );*/
+
+			/*if( (float)rot_prob[1] > 0.5f ){
+				sm.move(new Vector3(0f,0f,0f));
+				direction.z = 0.3f;
 			}
-			else if( (float)hits[1] != 1 && ( (float)hits[0] == 1 || (float)hits[2] == 1 ) )
+			else if( (float)rot_prob[1] <= 0.5 && ( (float)rot_prob[0] > 0.5 || (float)rot_prob[2] > 0.5 ) )
 				direction.z = 0.5f;
-			else if( (float)hits[1] != 1 && (float)hits[0] != 1 && (float)hits[2] != 1 && Mathf.Abs(angleDiff) > 10f )
+			else if( (float)rot_prob[1] <= 0.5 
+			        && (float)rot_prob[0] <= 0.5 
+			        && (float)rot_prob[2] <= 0.5 
+			        && Mathf.Abs(angleDiff) > 10f )
 				direction.z = 0.30f;
 			else
-				direction = GetNewDirection(nets[0], deltaZ, Mathf.Abs(angleDiff) );
+				direction = GetNewDirection(nets[0], deltaZ );*/
 
-
+			direction.z = 0.30f;
 			print ( new Vector3(rot_prob[0], rot_prob[1], rot_prob[2]) );
 		}
 
