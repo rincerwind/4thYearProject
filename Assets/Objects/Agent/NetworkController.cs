@@ -63,7 +63,7 @@ public class NetworkController : MonoBehaviour {
 			rotType[0] = 1f;
 		else if( left_count > right_count )
 			rotType[2] = 1f;
-		else if( (float)hits[mid] == 1f )
+		else 
 			rotType[1] = 1f;
 
 		net.allOutputs.Add(rotType[0]);
@@ -89,14 +89,14 @@ public class NetworkController : MonoBehaviour {
 	}
 
 	private void trainNetworks(){
-		float[,] sensorTrain = { {0f,0f,0f,1f,1f}, //{0f,0f,0f,1f,0f},
-			//{0f,1f,1f,1f,0f}, 
+		float[,] sensorTrain = { {0f,0f,0f,1f,1f}, {0f,0f,0f,1f,0f}, {0f,1f,0f,1f,0f}, {0f,1f,0f,1f,1f},
+			{0f,1f,1f,1f,0f}, 
 			{0f,0f,1f,0f,0f}, 
-			{1f,1f,0f,0f,0f}, //{0f,1f,0f,0f,1f}, 
-		//	{0f,0f,0f,0f,0f} 
+			{1f,1f,0f,0f,0f}, {0f,1f,0f,0f,0f}, {1f,1f,0f,1f,0f},
+			//{0f,0f,0f,0f,0f} 
 		};
 
-		for(int i = 0; i < 3; i++){
+		for(int i = 0; i < 9; i++){
 			ArrayList hits = new ArrayList();
 			hits.Add(sensorTrain[i,0]);
 			hits.Add(sensorTrain[i,1]);
@@ -194,7 +194,7 @@ public class NetworkController : MonoBehaviour {
 
 		// Handle sensor data recording
 		/*if ( WorldManager.currentLevel == 2 && recordMovement 
-		    && !TrainingPhase && (direction.z != 0f || rotAmount != 0f) )
+		    && !TrainingPhase && rotAmount != 0f )
 			recordSensorData(ref nets[2], hits);*/
 
 		// Handle Network training
@@ -205,28 +205,19 @@ public class NetworkController : MonoBehaviour {
 		if ( !debugMovement && !recordMovement && !TrainingPhase ){
 			float[] rot_prob = GetNewSensorData(nets[2], hits);
 			int min_pos = 1;
+			float epsilon = 0.0001f;
 			/*if ( (float)rot_prob[1] <= 0.5 
 			    && ((Mathf.Abs(angleDiff) < 165 && Mathf.Abs (angleDiff) > 15f) || deltaZ > 15f )
 			    && ( (float)rot_prob[0] > 0.5 || (float)rot_prob[2] > 0.5 ) )
 				rotAmount = 0;*/
 
-			if( rot_prob[0] > rot_prob[1] )
-				min_pos = 1;
-			else
-				min_pos = 0;
-
-			if( rot_prob[min_pos] > rot_prob[2] )
-				min_pos = 2;
-
-			if( min_pos == 0 && ( ((float)rot_prob[1] > 0.5f && (float)rot_prob[2] > 0f)
-			                     || ((float)rot_prob[1] <= 0.5f && (float)rot_prob[1] > 0f 
-			    						&& (float)rot_prob[2] > 0.7) ) )
+			if( (int)(rot_prob[0]*10) > (int)(rot_prob[2]*10) )
 				rotAmount = 1;
-			else if( min_pos == 2 && ( ((float)rot_prob[1] > 0.5f && (float)rot_prob[0] > 0f)
-			                          || ((float)rot_prob[1] <= 0.5f && (float)rot_prob[1] > 0f 
-			    							&& (float)rot_prob[0] > 0.7) ) )
+			else if( (int)(rot_prob[0]*10) < (int)(rot_prob[2]*10) )
 				rotAmount = -1;
-			else
+			/*else if( (float)hits[hits.Count/2] == 0f && (int)(rot_prob[0]*10) != (int)(rot_prob[2]*10) )
+				rotAmount = 0;*/
+			else if( (int)(rot_prob[0]*10) == 0 && (int)(rot_prob[1]*10) == 0 && (int)(rot_prob[2]*10) == 0 )
 				rotAmount = GetNewRotation(nets[1], angleDiff);
 
 			/*if ( ((float)rot_prob[1] > 0.5 && (float)rot_prob[0] > 0.5)
@@ -261,6 +252,7 @@ public class NetworkController : MonoBehaviour {
 
 			direction.z = 0.30f;
 			print ( new Vector3(rot_prob[0], rot_prob[1], rot_prob[2]) );
+			//print (min_pos);
 		}
 
 		sm.rotate(rotAmount * Time.deltaTime * sm.rotateSpeed);
