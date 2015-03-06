@@ -8,27 +8,8 @@ public class RadialGridSensor : MonoBehaviour {
 	
 	private Vector3 sensorOrigin;
 	private Vector3 initRayDirection = new Vector3 (1, 0, 0);
-	
-	/*private void drawRedZoneRays(ref ArrayList rays){
-		float sphereRadius = transform.parent.GetComponent<SphereCollider>().radius * transform.parent.localScale.x;
-
-		// init ray origins
-		Vector3 leftRayOrigin = sensorOrigin;
-		leftRayOrigin.x -= sphereRadius;
-
-		Vector3 rightRayOrigin = sensorOrigin;
-		rightRayOrigin.x += sphereRadius;
-
-		// init rays
-		Ray leftRay = new Ray(leftRayOrigin, transform.rotation * Vector3.forward);
-		Ray rightRay = new Ray(rightRayOrigin, transform.rotation * Vector3.forward);
-
-		Debug.DrawRay(leftRay.origin, leftRay.direction * radius);
-		Debug.DrawRay(rightRayOrigin, rightRay.direction * radius);
-
-		rays.Add(leftRay);
-		rays.Add(rightRay);
-	}*/
+	private ArrayList rays;
+	private int layerMask;
 
 	private void drawRays(ref ArrayList rays, 
 	                            ref Vector3 rayDirection){
@@ -36,15 +17,18 @@ public class RadialGridSensor : MonoBehaviour {
 		Ray r1 = new Ray(sensorOrigin, rayDirection);
 		rays.Add(r1);
 	}
+
+	public float getRotAngle(){
+		return visionAngle / sectors;
+	}
 	
 	public ArrayList collisionCheck(){
 		Vector3 currRayDirection;
-		
-		ArrayList rays = new ArrayList();
 		ArrayList hits = new ArrayList();
+		rays = new ArrayList();
 
 		// collide with everything that is NOT a Player or Goal
-		int layerMask = ~(1<<LayerMask.NameToLayer("Player") | 1<<LayerMask.NameToLayer("Goal"));
+		layerMask = ~(1<<LayerMask.NameToLayer("Player") | 1<<LayerMask.NameToLayer("Goal"));
 		
 		// Init some variables
 		sensorOrigin = new Vector3 (transform.position.x, 
@@ -69,14 +53,18 @@ public class RadialGridSensor : MonoBehaviour {
 
 		for(int i = 0; i < rays.Count; i++){
 			Ray curr = (Ray)rays[i];
+			int mid = rays.Count/2;
+			int length = (i != 0 && i != rays.Count - 1 && i != mid)? radius/2 : radius;
 			
-			if( Physics.Raycast( curr, out hitInfo, radius, layerMask ) ){
+			if( Physics.Raycast( curr, out hitInfo, length, layerMask ) ){
 				Debug.DrawRay( curr.origin, curr.direction * hitInfo.distance, Color.red );
 				//hits.Add (hitInfo.distance);
 				hits.Add (1f);
 			}
-			else
+			else{
+				Debug.DrawRay( curr.origin, curr.direction * length, Color.white );
 				hits.Add (0f);
+			}
 		}
 		return hits;
 	}
