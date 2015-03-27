@@ -43,6 +43,7 @@ public class NetworkController : MonoBehaviour {
 		return finalAngle;
 	}
 
+	// Record training data for Sensor Network
 	private void recordSensorData(ref NeuralNetwork net, ArrayList hits, float[] rotType){
 		net.allInputs.AddRange(hits);
 
@@ -51,6 +52,7 @@ public class NetworkController : MonoBehaviour {
 		net.allOutputs.Add(rotType[2]);
 	}
 
+	// Record training data for Rotation
 	private void recordRotation(ref NeuralNetwork net, float rotation, float angleDiff){
 		if (target == null)
 			target = GameObject.FindGameObjectWithTag("Goal");
@@ -59,6 +61,7 @@ public class NetworkController : MonoBehaviour {
 		net.allInputs.Add(angleDiff);
 	}
 
+	// Record training data for Movement
 	private void recordDirection(ref NeuralNetwork net, float verticalMovement,
 	                             float deltaZ){
 		if (sensor == null)
@@ -68,6 +71,7 @@ public class NetworkController : MonoBehaviour {
 		net.allInputs.Add (deltaZ);
 	}
 
+	// Train all networks
 	private void trainNetworks(){
 		foreach (NeuralNetwork net in nets)
 			net.LearningPhase(net.allInputs, net.allOutputs, net.allowedError);
@@ -77,7 +81,7 @@ public class NetworkController : MonoBehaviour {
 	private Vector3 GetNewDirection(NeuralNetwork net, float deltaZ){
 		LA.Matrix<float> inputs = LA.Matrix<float>.Build.Dense (1, net.numInputs, new float[]{
 									deltaZ });
-		LA.Matrix<float> outputs = net.ComputeOutputs2(inputs);
+		LA.Matrix<float> outputs = net.ComputeOutputs(inputs);
 		return new Vector3(0, 0, outputs[0,0]);
 	}
 	
@@ -91,7 +95,7 @@ public class NetworkController : MonoBehaviour {
 
 		LA.Matrix<float> inputs = LA.Matrix<float>.Build.Dense (1, net.numInputs, input_array);
 		
-		LA.Matrix<float> outputs = net.ComputeOutputs2(inputs);
+		LA.Matrix<float> outputs = net.ComputeOutputs(inputs);
 		float[] output = new float[]{outputs[0,0], outputs[0,1], outputs[0,2]};
 		return output;
 	}
@@ -105,7 +109,7 @@ public class NetworkController : MonoBehaviour {
 
 		LA.Matrix<float> inputs = LA.Matrix<float>.Build.Dense (1, net.numInputs, input_array);
 
-		LA.Matrix<float> outputs = net.ComputeOutputs2(inputs);
+		LA.Matrix<float> outputs = net.ComputeOutputs(inputs);
 		return outputs[0,0];
 	}
 
@@ -160,7 +164,7 @@ public class NetworkController : MonoBehaviour {
 			recordRotation(ref nets[1], rotAmount, angleDiff);
 
 		// Handle sensor data recording
-		if ( WorldManager.currentLevel == 2 && recordMovement 
+		if ( WorldManager.currentLevel >= 2 && recordMovement 
 		    && !TrainingPhase && (direction.z > 0f || rotAmount != 0f) ){
 			float[] rotType = {0f,0f,0f};
 
@@ -184,6 +188,7 @@ public class NetworkController : MonoBehaviour {
 			int max_val = -1;
 			int max_pos = -1;
 
+			// Look for a possible collision
 			if( (int)(rot_prob[0]*10) > (int)(rot_prob[1]*10) ){
 				max_val = -(int)(rot_prob[0]*10);
 				max_pos = 0;
@@ -198,12 +203,19 @@ public class NetworkController : MonoBehaviour {
 				max_pos = 2;
 			}
 
-			if( Mathf.Abs(max_val) > 5 )
+			// Decide whether to take control from Networks or not
+			if( Mathf.Abs(max_val) > 5 ){
 				rotAmount = max_val / 10.0f;
-			else
+				direction.z = 0.3f;
+			}
+			else{
 				rotAmount = GetNewRotation(nets[1], angleDiff);
+				direction = GetNewDirection(nets[0], deltaZ);
+			}
 
-			direction.z = 0.30f; // Test code
+			// Slow down if something immediately in-front
+			if( (int)rot_prob[1]*10 > 0 )
+			   direction.z = 0.3f; // Test code
 			print ( new Vector3(rot_prob[0], rot_prob[1], rot_prob[2]) );
 		}
 

@@ -10,6 +10,7 @@ public class WorldManager : MonoBehaviour {
 	private static GameObject agent;
 
 	void Start(){
+		// Do not destroy the Agent and the Sensor
 		DontDestroyOnLoad(gameObject);
 		agent = GameObject.FindWithTag("Player");
 		DontDestroyOnLoad(agent);

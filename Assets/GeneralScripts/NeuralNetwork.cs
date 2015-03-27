@@ -7,28 +7,29 @@ using DBL = MathNet.Numerics.LinearAlgebra.Double;
 public class NeuralNetwork : MonoBehaviour
 {
 	// ------------------------------------ Properties ------------------------------------
-	public int numIterations;
-	public int numInputs;
-	public int numHidden;
-	public int numOutputs;
-	public int numHiddenLayers;
-	public float allowedError;
+	public int numIterations;			// 
+	public int numInputs;				// number of neurons in Input Layer
+	public int numHidden;				// number of neurons in Hidden Layer
+	public int numOutputs;				// number of neurons in Output Layer
+	public int numHiddenLayers;			// number of hidden layers
+	public float allowedError;			// a threshold of the error
 	public float learningRate;
 	public float momentum;
-	public ArrayList allOutputs;
-	public ArrayList allInputs;
+	public ArrayList allOutputs;		// stores the outputs of the training set
+	public ArrayList allInputs;			// stores the inputs of the training set
 	public bool Classification = true;
 
-	private int numTestCases;
-	private ArrayList w_weights;
-	private ArrayList w_biases;
-	private ArrayList w_outputs;
-	private ArrayList biasDeltas;
-	private ArrayList weightDeltas;
+	private int numTestCases;			
+	private ArrayList w_weights;		// stores the weights of the different layers
+	private ArrayList w_biases;			// stores the biases of the different layers
+	private ArrayList w_outputs;		// stores the outputs of the different layers
+	private ArrayList biasDeltas;		// stores the deltas of the biases in the different layers
+	private ArrayList weightDeltas;		// stores the deltas of the weights in the different layers
 
 	// ------------------------------------ Initialization ------------------------------------
 	void Start ()
 	{
+		// Init Network
 		allOutputs = new ArrayList ();
 		allInputs = new ArrayList ();
 
@@ -176,7 +177,7 @@ public class NeuralNetwork : MonoBehaviour
 
 	// ---------------------------- Feed-Forward Part ----------------------------
 
-	public LA.Matrix<float> ComputeOutputs2(LA.Matrix<float> newInputs){
+	public LA.Matrix<float> ComputeOutputs(LA.Matrix<float> newInputs){
 		LA.Matrix<float> sums;
 		//inputs = newInputs;
 		w_outputs[0] = newInputs;
@@ -288,11 +289,12 @@ public class NeuralNetwork : MonoBehaviour
 				currInput = (inputs.Row(m)).ToRowMatrix();
 				currTarget = (targets.Row(m)).ToRowMatrix();
 
-				w_outputs[w_outputs.Count-1] = ComputeOutputs2(currInput);
+				w_outputs[w_outputs.Count-1] = ComputeOutputs(currInput);
 				ComputeDeltas2(ref currTarget, learningRate, momentum, ref biasDeltas,ref weightDeltas);
 				current_cost += CostFunction(currTarget, (LA.Matrix<float>)w_outputs[w_outputs.Count-1]);
 			}
 
+			// Weight-adjustment
 			for(int l = 0; l <= numHiddenLayers; l++){
 				w_biases[l] = ((LA.Matrix<float>)w_biases[l]).Add( ((LA.Matrix<float>)biasDeltas[l]).Divide(numTestCases) );
 				w_weights[l] = ((LA.Matrix<float>)w_weights[l]).Add( ((LA.Matrix<float>)weightDeltas[l]).Divide(numTestCases) );
